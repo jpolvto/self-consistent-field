@@ -1,18 +1,15 @@
 [package]
-name = "csv_sync"
+name = "self_consistent_field"
 version = "0.1.0"
-edition = "2021"
+edition = "2022"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-mongodb = "2.1"
-serde = "1.0.136"
-bson = "2.1.0"
-futures-util = "0.3.21"
+serde = "1.0.140"
 dotenv = "0.15.0"
-serde_json = "1.0.79"
-tokio = "1.17.0"
-env_logger = "0.9.0"
+serde_json = "1.0.82"
 derive_more = "0.99.17"
 csv = "1.1"
+eigenvalues = "0.4.0"
+nalgebra = {version = "0.21", default-features = false, features = ["serde-serialize", "std"] }
