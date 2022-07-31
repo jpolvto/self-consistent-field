@@ -1,1 +1,18 @@
-[[1, 2, 3, 4, 5, 6, 7, 8, 9],3,3]
+{
+    "atoms":
+    [
+        {
+            "id": 1,
+            "z": 1,
+            "position": [1, 1, 1],
+            "number_of_electrons": 2
+        },
+        {
+            "id": 2,
+            "z": 1,
+            "position": [2, 2, 2],
+            "number_of_electrons": 2
+        }
+    ]
+    
+}
