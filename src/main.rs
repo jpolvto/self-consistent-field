@@ -1,6 +1,8 @@
 use std::env;
 use std::fs;
+
 use nalgebra::DMatrix;
+
 
 fn main() {
     dotenv::dotenv().ok();
