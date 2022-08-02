@@ -3,6 +3,7 @@ mod molecule;
 use std::env;
 use std::fs;
 
+
 fn main() {
     dotenv::dotenv().ok();
 
@@ -12,6 +13,5 @@ fn main() {
 
     let bla = serde_json::to_string(&deserialized).unwrap();
 
-    // Compare against reference
     println!("Molecule:\n{}", bla);
 }

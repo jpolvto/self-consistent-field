@@ -4,21 +4,13 @@
         {
             "id": 1,
             "z": 1,
-            "position": {
-                "x": 1,
-                "y": 1,
-                "z": 1
-            },
+            "position": [1,1,1],
             "number_of_electrons": 2
         },
         {
             "id": 2,
             "z": 1,
-            "position": {
-                "x": 2,
-                "y": 2,
-                "z": 2
-            },
+            "position": [2,2,2],
             "number_of_electrons": 2
         }
     ]
