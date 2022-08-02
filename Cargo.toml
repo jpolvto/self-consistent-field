@@ -10,3 +10,4 @@ nalgebra = {version = "0.31.1", default-features = false, features = ["serde-ser
 serde = "1.0.140"
 dotenv = "0.15.0"
 serde_json = "1.0.82"
+derive_more = "0.99.0"

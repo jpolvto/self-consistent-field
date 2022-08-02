@@ -1,23 +1,26 @@
 use nalgebra::Vector3;
+use serde::{Serialize, Deserialize};
 
-struct Atom {
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Atom {
     id: i32,
     z: i32,
     position: Vector3<i32>,
-    number_of_electrons: i32,
+    number_of_electrons: i32
 }
 
-struct Molecule {
-    atoms: Vec<Atom>,
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Molecule {
+    atoms: Vec<Atom>
 }
 
 impl Molecule {
     fn get_max_angular_momentum(&self) {
-
+        
     }
 
     fn get_number_of_contracted_gaussians(&self) {
-
+        
     }
 
     fn get_number_of_gaussians(&self) {
