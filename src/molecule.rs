@@ -18,15 +18,15 @@ pub struct Molecule {
 }
 
 impl Molecule {
-    fn get_overlap_integral(orbital_a:(f32, Vector3<f32>), orbital_b:(f32, Vector3<f32>)) -> f32 {
-        let (p, difference, k, position_p) = gaussian_product(orbital_a, orbital_b);
+    fn get_overlap_integral(gaussian_a:(f32, Vector3<f32>), gaussian_b:(f32, Vector3<f32>)) -> f32 {
+        let (p, difference, k, position_p) = gaussian_product(gaussian_a, gaussian_b);
         (PI / p).powf(1.5) * k
     }
     
-    fn get_kinetic_integral(orbital_a:(f32, Vector3<f32>), orbital_b:(f32, Vector3<f32>)) -> f32 {
-        let (p, difference, k, position_p) = gaussian_product(orbital_a, orbital_b);
-        let (a, position_a) = orbital_a;
-        let (b, position_b) = orbital_b;
+    fn get_kinetic_integral(gaussian_a:(f32, Vector3<f32>), gaussian_b:(f32, Vector3<f32>)) -> f32 {
+        let (p, difference, k, position_p) = gaussian_product(gaussian_a, gaussian_b);
+        let (a, position_a) = gaussian_a;
+        let (b, position_b) = gaussian_b;
     
         (a * b / p) * (3.0 - 2.0 * (a * b / p) * difference) * (PI / p).powf(1.5) * k
     }
