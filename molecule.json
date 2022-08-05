@@ -2,12 +2,12 @@
     "atoms":
     [
         {
-            "z": 1,
+            "atomic_number": 1,
             "position": [1,1,1],
             "number_of_electrons": 2
         },
         {
-            "z": 1,
+            "atomic_number": 1,
             "position": [2,2,2],
             "number_of_electrons": 2
         }
