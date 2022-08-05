@@ -3,12 +3,12 @@
     [
         {
             "atomic_number": 1,
-            "position": [1,1,1],
+            "position": [1.0,1.0,1.0],
             "number_of_electrons": 2
         },
         {
             "atomic_number": 1,
-            "position": [2,2,2],
+            "position": [2.0,2.0,2.0],
             "number_of_electrons": 2
         }
     ]
