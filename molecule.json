@@ -4,12 +4,14 @@
         {
             "atomic_number": 1,
             "position": [1.0,1.0,1.0],
-            "number_of_electrons": 2
+            "number_of_electrons": 2,
+            "principal_quantum_number": 1
         },
         {
             "atomic_number": 1,
             "position": [2.0,2.0,2.0],
-            "number_of_electrons": 2
+            "number_of_electrons": 2,
+            "principal_quantum_number": 1
         }
     ]
 }
