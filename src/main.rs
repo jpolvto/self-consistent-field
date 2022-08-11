@@ -4,10 +4,6 @@ mod gaussian;
 
 use std::env;
 use std::fs;
-use fastapprox::faster::erf;
-
-static PI: f32 = 3.141592654;
-
 fn main() {
     dotenv::dotenv().ok();
 
@@ -26,11 +22,4 @@ fn main() {
     println!("Molecule:\n{}", basis_set_serialized);
 }
 
-fn error_function(t: f32) -> f32 {
-    if t == 0.0 {
-         1.0
-    } else {
-        (0.5 * (PI / t).powf(0.5)) * erf(t.powf(0.5))
-    }
-}
 
