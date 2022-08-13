@@ -5,71 +5,86 @@ use serde::{Serialize, Deserialize};
 
 use crate::{basisset::BasisSet, molecule::{Atom, Molecule}};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug)]
 pub struct Gaussian {
+    //nuclear coordinates
     pub center: Vector3<f32>,
+
+    //Gaussian orbital exponent
     pub exponent: f32
 }
 
+//Slater Type Orbital fit with N primative gausians (STO-NG) type basis
+#[derive(Debug)]
+pub struct SlaterOrbital {
+    //linear combination of n Gaussian orbitals
+    n: i32,
+
+    //contraction coefficients
+    zetas: Vec<f32>,
+
+    //primitive Gaussians
+    gaussians: Vec<Gaussian>
+}
+
 impl Gaussian {
-    fn get_wavefunction_sto_ng(n: i32, b: BasisSet, r: f32, atomic_number: i32) -> f32 {
 
-        let mut wavefunction: f32 = Default::default();
-    
-        for i in 0..n {
-            wavefunction += b.elements.get(&atomic_number).unwrap().electron_shells[usize::MIN].coefficients[usize::MIN][i as usize]*
-            ((2.0*b.elements.get(&atomic_number).unwrap().electron_shells[usize::MIN].exponents[i as usize])/PI).powf(0.75)*
-            (-b.elements.get(&atomic_number).unwrap().electron_shells[usize::MIN].exponents[i as usize]*r.powf(2.0)).exp();
-        }
-        return wavefunction
+    fn gaussian_product(a: &Gaussian, b: &Gaussian) -> (Gaussian, f32, f32) {
+
+        // function to calculate a gaussian product, and to have some convenient variables
+
+        let r_ab = (a.center-b.center).norm_squared();
+        let exponent = a.exponent+b.exponent;
+        let k = (4.0*a.exponent*b.exponent/(PI.powf(2.0))).powf(0.75)*(-a.exponent*b.exponent/exponent*r_ab).exp();
+        let center = (a.exponent*a.center+b.exponent*b.center)/exponent;
+
+        (Gaussian {center, exponent}, r_ab, k)
     }
 
-    fn get_overlap_integral(a: Gaussian, b: Gaussian, rab2: f32) -> f32 {
+    fn get_overlap_integral(c: &Gaussian, k: f32) -> f32 {
 
-        //Calculates the overlap between two gaussian functions 
-        
-        (PI/(a.exponent+b.exponent)).powf(1.5)*(-a.exponent*b.exponent*rab2/(a.exponent+b.exponent)).exp()
+        //Calculates the overlap between two gaussian functions
+
+        (PI/c.exponent).powf(1.5)*k
+
     }
     
-    
-    fn get_kinetic_integral(a: Gaussian, b: Gaussian, rab2: f32) -> f32 {
-    
+    fn get_kinetic_integral(a: &Gaussian, b: &Gaussian, c: &Gaussian, r_ab: f32, k: f32) -> f32 {
+
         //Calculates the kinetic energy integrals for un-normalised primitives
-        
-        a.exponent*b.exponent/(a.exponent+b.exponent)*(3.0-2.0*a.exponent*b.exponent*rab2/(a.exponent+b.exponent))*
-        (PI/(a.exponent+b.exponent)).powf(1.5)*(-a.exponent*b.exponent*rab2/(a.exponent+b.exponent)).exp()
+
+        (a.exponent*b.exponent/c.exponent)*(3.0-2.0*
+        (a.exponent*b.exponent/c.exponent)*r_ab)*(PI/c.exponent).powf(1.5)*k
+
+    }
+
+    fn get_potential_integral(atom: Atom, c: &Gaussian, k: f32) -> f32 {
+
+        //Calculates the un-normalised nuclear attraction integrals
+
+        (-2.0*PI*atom.atomic_number as f32/c.exponent)*k*
+        Gaussian::f_zero(c.exponent*(c.center-atom.position).norm_squared())
+
     }
     
-     fn get_nuclear_attraction_integral(a: Gaussian, b: Gaussian, rab2: f32, rcp2: f32, atomic_number: i32) -> f32 {
-    
-        //Calculates the un-normalised nuclear attraction integrals
-    
-        -2.0*PI/(a.exponent+b.exponent)*Gaussian::error_function((a.exponent+b.exponent)*rcp2)*
-        (-a.exponent*b.exponent*rab2/(a.exponent+b.exponent)).exp()*atomic_number as f32
-     }
-    
-    fn get_two_electron_integral(a: Gaussian, b: Gaussian, c: Gaussian, d: Gaussian, rab2: f32, rcd2: f32, rpq2: f32) -> f32 {
-    
+    fn get_multi_electron_integral(p: &Gaussian, q: &Gaussian, k_ab: f32, k_cd: f32) -> f32 {
+
         /*
         Calculate two electron integrals
         a.exponent,b.exponent,c.exponent,d.exponent are the exponents alpha, beta, etc.
         rab2 equals squared distance between centre a.exponent and centre b.exponent
         */
-    
-        2.0*(PI.powf(2.5)/((a.exponent+b.exponent)*(c.exponent+d.exponent)*(a.exponent+b.exponent+c.exponent+d.exponent).sqrt())*
-        Gaussian::error_function((a.exponent+b.exponent)*(c.exponent+d.exponent)*rpq2/(a.exponent+b.exponent+c.exponent+d.exponent))*
-        (-a.exponent*b.exponent*rab2/(a.exponent+b.exponent)).exp()-c.exponent*d.exponent*rcd2/(c.exponent+d.exponent))
-    }
-    
-    
-    fn create_gaussian_orbitals(molecule: Molecule, basisset: BasisSet) {
-        for atom in molecule.atoms {
-    
-        }
-    }
-    
 
-    fn error_function(t: f32) -> f32 {
+        2.0*PI.powf(2.5)/(p.exponent*q.exponent*(p.exponent+q.exponent)).sqrt()*k_ab*k_cd*
+        Gaussian::f_zero(p.exponent*q.exponent/(p.exponent+q.exponent)*
+        (p.center-q.center).norm_squared())
+
+    }
+
+    fn f_zero(t: f32) -> f32 {
+
+        // single elctron error function
+        
         if t == 0.0 {
              1.0
         } else {
@@ -78,3 +93,4 @@ impl Gaussian {
     }
     
 }
+

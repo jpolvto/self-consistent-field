@@ -1,6 +1,8 @@
 use nalgebra::Vector3;
 use serde::{Serialize, Deserialize};
 
+use crate::basisset::BasisSet;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Atom {
     pub atomic_number: i32,
@@ -24,5 +26,11 @@ impl Molecule {
             } 
         }
         return energy;
+    }
+
+    fn get_slater_orbitals (&self, basisset: BasisSet) {
+        for atom in &self.atoms {
+            
+        }
     }
 }
