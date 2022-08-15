@@ -1,4 +1,3 @@
-
 use nalgebra::Vector3;
 use serde::{Serialize, Deserialize};
 
