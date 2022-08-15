@@ -1,18 +1,8 @@
 use std::f32::consts::PI;
 use fastapprox::faster::erf;
 use nalgebra::Vector3;
-use serde::{Serialize, Deserialize};
 
-use crate::{basisset::BasisSet, molecule::{Atom, Molecule}};
-
-#[derive(Debug)]
-pub struct Gaussian {
-    //nuclear coordinates
-    pub center: Vector3<f32>,
-
-    //Gaussian orbital exponent
-    pub exponent: f32
-}
+use crate::molecule::Atom;
 
 //Slater Type Orbital fit with N primative gausians (STO-NG) type basis
 #[derive(Debug)]
@@ -21,10 +11,33 @@ pub struct SlaterOrbital {
     n: i32,
 
     //contraction coefficients
-    zetas: Vec<f32>,
+    exponents: Vec<f32>,
 
     //primitive Gaussians
     gaussians: Vec<Gaussian>
+}
+
+impl SlaterOrbital {
+
+    pub fn create_slater_orbital(orbital_coefficients: &Vec<f32>, n: i32, center: Vector3<f32>, exponents: &Vec<f32>) -> SlaterOrbital {
+
+        let mut gaussians: Vec<Gaussian> = Vec::new();
+            
+        for coefficient in orbital_coefficients {
+            gaussians.push( Gaussian { center, coefficient: coefficient.clone() })
+        }
+
+        SlaterOrbital { n, exponents: exponents.clone(), gaussians }
+    }
+}
+
+#[derive(Debug)]
+pub struct Gaussian {
+    //nuclear coordinates
+    pub center: Vector3<f32>,
+
+    //Gaussian orbital coefficient
+    pub coefficient: f32
 }
 
 impl Gaussian {
@@ -34,18 +47,18 @@ impl Gaussian {
         // function to calculate a gaussian product, and to have some convenient variables
 
         let r_ab = (a.center-b.center).norm_squared();
-        let exponent = a.exponent+b.exponent;
-        let k = (4.0*a.exponent*b.exponent/(PI.powf(2.0))).powf(0.75)*(-a.exponent*b.exponent/exponent*r_ab).exp();
-        let center = (a.exponent*a.center+b.exponent*b.center)/exponent;
+        let coefficient = a.coefficient+b.coefficient;
+        let k = (4.0*a.coefficient*b.coefficient/(PI.powf(2.0))).powf(0.75)*(-a.coefficient*b.coefficient/coefficient*r_ab).exp();
+        let center = (a.coefficient*a.center+b.coefficient*b.center)/coefficient;
 
-        (Gaussian {center, exponent}, r_ab, k)
+        (Gaussian {center, coefficient}, r_ab, k)
     }
 
     fn get_overlap_integral(c: &Gaussian, k: f32) -> f32 {
 
         //Calculates the overlap between two gaussian functions
 
-        (PI/c.exponent).powf(1.5)*k
+        (PI/c.coefficient).powf(1.5)*k
 
     }
     
@@ -53,17 +66,17 @@ impl Gaussian {
 
         //Calculates the kinetic energy integrals for un-normalised primitives
 
-        (a.exponent*b.exponent/c.exponent)*(3.0-2.0*
-        (a.exponent*b.exponent/c.exponent)*r_ab)*(PI/c.exponent).powf(1.5)*k
+        (a.coefficient*b.coefficient/c.coefficient)*(3.0-2.0*
+        (a.coefficient*b.coefficient/c.coefficient)*r_ab)*(PI/c.coefficient).powf(1.5)*k
 
     }
 
-    fn get_potential_integral(atom: Atom, c: &Gaussian, k: f32) -> f32 {
+    fn get_potential_integral(atom: &Atom, c: &Gaussian, k: f32) -> f32 {
 
         //Calculates the un-normalised nuclear attraction integrals
 
-        (-2.0*PI*atom.atomic_number as f32/c.exponent)*k*
-        Gaussian::f_zero(c.exponent*(c.center-atom.position).norm_squared())
+        (-2.0*PI*atom.atomic_number as f32/c.coefficient)*k*
+        Gaussian::f_zero(c.coefficient*(c.center-atom.position).norm_squared())
 
     }
     
@@ -71,12 +84,12 @@ impl Gaussian {
 
         /*
         Calculate two electron integrals
-        a.exponent,b.exponent,c.exponent,d.exponent are the exponents alpha, beta, etc.
-        rab2 equals squared distance between centre a.exponent and centre b.exponent
+        a.coefficient,b.coefficient,c.coefficient,d.coefficient are the coefficients alpha, beta, etc.
+        rab2 equals squared distance between centre a.coefficient and centre b.coefficient
         */
 
-        2.0*PI.powf(2.5)/(p.exponent*q.exponent*(p.exponent+q.exponent)).sqrt()*k_ab*k_cd*
-        Gaussian::f_zero(p.exponent*q.exponent/(p.exponent+q.exponent)*
+        2.0*PI.powf(2.5)/(p.coefficient*q.coefficient*(p.coefficient+q.coefficient)).sqrt()*k_ab*k_cd*
+        Gaussian::f_zero(p.coefficient*q.coefficient/(p.coefficient+q.coefficient)*
         (p.center-q.center).norm_squared())
 
     }
