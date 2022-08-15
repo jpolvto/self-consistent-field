@@ -1,7 +1,7 @@
 use nalgebra::Vector3;
 use serde::{Serialize, Deserialize};
 
-use crate::{basisset::BasisSet, gaussian::{SlaterOrbital}};
+use crate::{basis_set::BasisSet, gaussian::{SlaterOrbital}};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Molecule {
@@ -24,7 +24,7 @@ pub struct Atom {
 }
 
 impl Molecule {
-    fn get_nuclear_repulsion_energy(&self) -> f32 {
+    pub fn get_nuclear_repulsion_energy(&self) -> f32 {
         let mut energy: f32 = 0.0;
 
         for atom_a in 0..self.atoms.len() {
@@ -35,13 +35,13 @@ impl Molecule {
         return energy;
     }
 
-    fn get_slater_orbitals (&self, basisset: &BasisSet, n: i32) -> Vec<SlaterOrbital> {
+    pub fn get_slater_orbitals (&self, basis_set: &BasisSet, n: i32) -> Vec<SlaterOrbital> {
 
         let mut result: Vec<SlaterOrbital> = Vec::new();
 
         for atom in &self.atoms {
 
-            for shell in &basisset.elements.get(&atom.atomic_number).unwrap().electron_shells {
+            for shell in &basis_set.elements.get(&atom.atomic_number).unwrap().electron_shells {
 
                 for orbital_coefficients in &shell.coefficients {
                     result.push(SlaterOrbital::create_slater_orbital(orbital_coefficients, n, atom.position, &shell.exponents));
