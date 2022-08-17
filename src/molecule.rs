@@ -87,17 +87,15 @@ impl Molecule {
 
         let h_core = kinetic+potential;
         let (s, u) = overlap.eigen_qr().unwrap();
-
         let x = u.dot((-1/2).exp())*u.adjoint();
-
         //X = U*diagm(s.^(-1/2))*U'   
 
         return (h_core, x, multi_electron)
 
     }
 
-    pub fn hartree_fock(size: usize, h_core: DMatrix<f32>, molecule: Molecule, x: DMatrix<f32>) -> (f32, f32) {
-        let mut p = DMatrix::<f32>::zeros(size, size);
+    pub fn hartree_fock(size: usize, gaussians: &Vec<Gaussian>, h_core: DMatrix<f32>, molecule: Molecule, x: DMatrix<f32>, multi_electron: DMatrix<f32>) -> (f32, f32) {
+        let mut p_matrix = DMatrix::<f32>::zeros(size, size);
 
         let mut total_energy: f32 = Default::default();
         let mut old_energy:f32 = Default::default();
@@ -117,11 +115,16 @@ impl Molecule {
                             let (p, r_ab, k_ab) = Gaussian::gaussian_product(a, b);
                             let (q, r_cd, k_cd) = Gaussian::gaussian_product(c, d);
 
+                            let coulomb  = multi_electron[(i, j, k, l)];
+                            let exchange = multi_electron[(i, k, l, j)];
+
+                            g[(i,j)] += p_matrix[(k,l)]*(coulomb-0.5*exchange);
                         }
                     }
                 }
             }
             let f = h_core + g;
+            
             let electronic_energy: f32 = Default::default();
 
             for i in 0..size {
@@ -137,10 +140,8 @@ impl Molecule {
             }
 
             let f_prime = x.adjoint()*f*x;
-
             let (epsilon, c_prime) = f_prime.eigen_qr().unwrap();
             let c = (x*c_prime).real();
-
 
             let mut p = DMatrix::<f32>::zeros(size, size);
 

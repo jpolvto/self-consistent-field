@@ -21,8 +21,8 @@ fn main() {
 
     let gaussians: Vec<Gaussian> = molecule.get_gaussians(&basis_set, 3);
     let size = gaussians.len();
-    
+
     let (h_core, x, multi_electron) = Molecule::get_initial_values(size, &gaussians, molecule);
-    let (total_energy, electronic_energy) = Molecule::hartree_fock(size, h_core, molecule, x);
+    let (total_energy, electronic_energy) = Molecule::hartree_fock(size, &gaussians, h_core, molecule, x, multi_electron);
 
 }
