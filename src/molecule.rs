@@ -88,7 +88,7 @@ impl Molecule {
         let h_core = kinetic+potential;
         let (s, u) = overlap.eigen_qr().unwrap();
 
-        let x = u.dot((-1/2).exp())*u.adjoint()
+        let x = u.dot((-1/2).exp())*u.adjoint();
 
         //X = U*diagm(s.^(-1/2))*U'   
 
