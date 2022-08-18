@@ -51,7 +51,7 @@ impl Molecule {
         gaussians
     }
 
-    pub fn get_initial_values(size: usize, gaussians: &Vec<Gaussian>, molecule: &Molecule) -> (DMatrix<f32>, DMatrix<f32>, Array4<f32>) {
+    pub fn initial_values(size: usize, gaussians: &Vec<Gaussian>, molecule: &Molecule) -> (DMatrix<f32>, DMatrix<f32>, Array4<f32>) {
 
         let mut kinetic = DMatrix::<f32>::zeros(size, size);
         let mut overlap = DMatrix::<f32>::zeros(size, size);
