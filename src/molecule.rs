@@ -1,6 +1,4 @@
-use std::default;
-
-use nalgebra::{Vector3, DMatrix, SquareMatrix, ComplexField};
+use nalgebra::{Vector3, DMatrix, ComplexField};
 use ndarray::Array4;
 use serde::{Serialize, Deserialize};
 
@@ -45,7 +43,7 @@ impl Molecule {
             for shell in &basis_set.elements.get(&atom.atomic_number).unwrap().electron_shells {
                 for orbital_coefficients in &shell.coefficients {
                     for i in 1..n {
-                        gaussians.push(Gaussian{ center: atom.position, coefficient: orbital_coefficients.get(n).unwrap().clone(), exponent: shell.exponents.get(n).unwrap().clone() })
+                        gaussians.push(Gaussian{ center: atom.position, coefficient: orbital_coefficients.get(i).unwrap().clone(), exponent: shell.exponents.get(i).unwrap().clone() })
                     }
                 }
             }
@@ -79,7 +77,7 @@ impl Molecule {
                         let c  = gaussians.get(k).unwrap();
                         let d = gaussians.get(l).unwrap();
 
-                        let (q, r_cd, k_cd) = Gaussian::gaussian_product(c, d);
+                        let (q, _r_cd, k_cd) = Gaussian::gaussian_product(c, d);
                         [two_electron[[i, j, k, l]], two_electron[[i, k, l, j]]] = [Gaussian::two_electron_integral(&p, &q, k_ab, k_cd); 2]
                     }
                 }
@@ -98,7 +96,6 @@ impl Molecule {
     pub fn hartree_fock(size: usize, h_core: DMatrix<f32>, nuclear_repulsion_energy: f32, x: &DMatrix<f32>, two_electron: Array4<f32>) -> (f32, f32) {
 
         let mut p = DMatrix::<f32>::zeros(size, size);
-        let mut electronic_energy: f32 = Default::default();
         let mut total_energy: f32 = Default::default();
         let mut old_energy:f32 = Default::default();
         let mut electronic_energy: f32 = Default::default();
@@ -131,9 +128,15 @@ impl Molecule {
                 }
             }
 
+            electronic_energy += 100.0;
+
             total_energy = electronic_energy + nuclear_repulsion_energy;
+
+            if total_energy - old_energy < 1e-6 {
+                break
+            }
     
-            old_energy = total_energy
+            old_energy = total_energy;
         }
         (total_energy, electronic_energy)
     }

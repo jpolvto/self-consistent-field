@@ -25,4 +25,7 @@ fn main() {
 
     let (h_core, x, two_electron) = Molecule::get_initial_values(size, &gaussians, &molecule);
     let (total_energy, electronic_energy) = Molecule::hartree_fock(size, h_core, nuclear_repulsion_energy, &x, two_electron);
+
+    println!(   "total energy: {}
+                electronic energy: {} ", total_energy, electronic_energy);
 }
