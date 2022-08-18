@@ -19,10 +19,10 @@ fn main() {
     let basis_set_contents = fs::read_to_string(basis_set_file_name).unwrap();
     let basis_set: BasisSet = serde_json::from_str(&basis_set_contents).unwrap();
 
-    let gaussians: Vec<Gaussian> = molecule.get_gaussians(&basis_set, 3);
+    let gaussians: Vec<Gaussian> = molecule.create_gaussians(&basis_set, 3);
     let size = gaussians.len();
+    let nuclear_repulsion_energy = molecule.nuclear_repulsion_energy();
 
-    let (h_core, x, multi_electron) = Molecule::get_initial_values(size, &gaussians, molecule);
-    let (total_energy, electronic_energy) = Molecule::hartree_fock(size, &gaussians, h_core, molecule, x, multi_electron);
-
+    let (h_core, x, two_electron) = Molecule::get_initial_values(size, &gaussians, &molecule);
+    let (total_energy, electronic_energy) = Molecule::hartree_fock(size, h_core, nuclear_repulsion_energy, &x, two_electron);
 }

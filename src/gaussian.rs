@@ -31,7 +31,7 @@ impl Gaussian {
         (Gaussian {center, coefficient, exponent}, r_ab, k)
     }
 
-    pub fn get_overlap_integral(p: &Gaussian, k: f32) -> f32 {
+    pub fn overlap_integral(p: &Gaussian, k: f32) -> f32 {
 
         //Calculates the overlap between two gaussian functions
 
@@ -39,7 +39,7 @@ impl Gaussian {
 
     }
     
-    pub fn get_kinetic_integral(a: &Gaussian, b: &Gaussian, p: &Gaussian, r_ab: f32, k: f32) -> f32 {
+    pub fn kinetic_energy_integral(a: &Gaussian, b: &Gaussian, p: &Gaussian, r_ab: f32, k: f32) -> f32 {
 
         //Calculates the kinetic energy integrals for un-normalised primitives
 
@@ -48,7 +48,7 @@ impl Gaussian {
 
     }
 
-    pub fn get_potential_integral(atom: &Atom, p: &Gaussian, k: f32) -> f32 {
+    pub fn nuclear_attraction_integral(atom: &Atom, p: &Gaussian, k: f32) -> f32 {
 
         //Calculates the un-normalised nuclear attraction integrals
 
@@ -57,7 +57,7 @@ impl Gaussian {
 
     }
     
-    pub fn get_multi_electron_integral(p: &Gaussian, q: &Gaussian, k_ab: f32, k_cd: f32) -> f32 {
+    pub fn two_electron_integral(p: &Gaussian, q: &Gaussian, k_ab: f32, k_cd: f32) -> f32 {
 
         /*
         Calculate two electron integrals
