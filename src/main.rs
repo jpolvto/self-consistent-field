@@ -22,8 +22,28 @@ fn main() {
     let gaussians: Vec<Gaussian> = molecule.create_gaussians(&basis_set, 3);
     let size = gaussians.len();
     let nuclear_repulsion_energy = molecule.nuclear_repulsion_energy();
+    let atoms = molecule.atoms;
 
-    let (h_core, x, two_electron) = Molecule::initial_values(size, &gaussians, &molecule);
+    //println!("atoms:{}", serde_json::to_string(&atoms).unwrap());
+    //println!("atoms:{}", serde_json::to_string(&gaussians).unwrap());
+
+    let two_electron = Molecule::two_electron_matrix(&gaussians, size);
+
+    //println!("two_electron:{}", two_electron);
+
+    let kinetic = Molecule::kinetic_matrix(&gaussians, size);
+
+    //println!("kinetic:{}", kinetic);
+
+    let overlap = Molecule::overlap_matrix(&gaussians, size);
+
+    //println!("overlap:{}", overlap);
+
+    let nuclear_attraction_matrix = Molecule::nuclear_attraction_matrix(&gaussians, size, &atoms);
+
+    //println!("nuclear_attraction_matrix:{}", nuclear_attraction_matrix);
+
+    let (h_core, x) = Molecule::initial_values(overlap, kinetic, nuclear_attraction_matrix);
     let (total_energy, electronic_energy) = Molecule::hartree_fock(size, h_core, nuclear_repulsion_energy, &x, two_electron);
 
     println!(   "total energy: {}

@@ -1,10 +1,11 @@
 use std::f32::consts::PI;
 use fastapprox::faster::erf;
 use nalgebra::Vector3;
+use serde::{Serialize, Deserialize};
 
 use crate::molecule::Atom;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Gaussian {
     //nuclear coordinates
     pub center: Vector3<f32>,
