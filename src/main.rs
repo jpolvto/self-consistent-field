@@ -20,32 +20,42 @@ fn main() {
     let basis_set: BasisSet = serde_json::from_str(&basis_set_contents).unwrap();
 
     let gaussians: Vec<Gaussian> = molecule.create_gaussians(&basis_set, 3);
+
+    //println!("gaussians: {}", serde_json::to_string(&gaussians).unwrap());
+
     let size = gaussians.len();
+
+    //println!("size: {}", size);
+
     let nuclear_repulsion_energy = molecule.nuclear_repulsion_energy();
+
+    //println!("nuclear_repulsion_energy: {}", nuclear_repulsion_energy);
+
     let atoms = molecule.atoms;
 
-    //println!("atoms:{}", serde_json::to_string(&atoms).unwrap());
-    //println!("atoms:{}", serde_json::to_string(&gaussians).unwrap());
+    //println!("atoms: {}", serde_json::to_string(&atoms).unwrap());
 
     let two_electron = Molecule::two_electron_matrix(&gaussians, size);
 
-    //println!("two_electron:{}", two_electron);
+    //println!("two_electron: {}", two_electron);
 
     let kinetic = Molecule::kinetic_matrix(&gaussians, size);
 
-    //println!("kinetic:{}", kinetic);
+    //println!("kinetic: {}", kinetic);
 
     let overlap = Molecule::overlap_matrix(&gaussians, size);
 
-    //println!("overlap:{}", overlap);
+    //println!("overlap: {}", overlap);
 
     let nuclear_attraction_matrix = Molecule::nuclear_attraction_matrix(&gaussians, size, &atoms);
 
-    //println!("nuclear_attraction_matrix:{}", nuclear_attraction_matrix);
+    //println!("nuclear_attraction_matrix: {}", nuclear_attraction_matrix);
 
     let (h_core, x) = Molecule::initial_values(overlap, kinetic, nuclear_attraction_matrix);
+
+    //println!("h_core: {}\nx: {}", h_core, x);
+
     let (total_energy, electronic_energy) = Molecule::hartree_fock(size, h_core, nuclear_repulsion_energy, &x, two_electron);
 
-    println!(   "total energy: {}
-                electronic energy: {} ", total_energy, electronic_energy);
+    println!("total energy: {}\nelectronic energy: {} ", total_energy, electronic_energy);
 }

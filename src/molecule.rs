@@ -16,12 +16,6 @@ pub struct Atom {
 
     //the position is specified as a 3D vector
     pub position: Vector3<f32>,
-
-    //open shell calculations
-    number_of_electrons: i32,
-
-    //open shell calculations
-    principal_quantum_number: i32
 }
 
 impl Molecule {
@@ -43,7 +37,6 @@ impl Molecule {
             for shell in &basis_set.elements.get(&atom.atomic_number).unwrap().electron_shells {
                 for orbital_coefficients in &shell.coefficients {
                     for i in 0..=(n-1) {
-                        //println!("index:{}, coefficient:{}, atom:{}", i, orbital_coefficients.get(i).unwrap(), atom.position);
                         gaussians.push(Gaussian{ center: atom.position, coefficient: orbital_coefficients.get(i).unwrap().clone(), exponent: shell.exponents.get(i).unwrap().clone() })
                     }
                 }
@@ -132,7 +125,6 @@ impl Molecule {
         let x = &overlap_eigen.eigenvectors * DMatrix::from_diagonal(&mapped_eigenvalues)*&overlap_eigen.eigenvectors.adjoint();
 
         (h_core, x)
-
     }
 
     pub fn hartree_fock(size: usize, h_core: DMatrix<f32>, nuclear_repulsion_energy: f32, x: &DMatrix<f32>, two_electron: Array4<f32>) -> (f32, f32) {
@@ -180,6 +172,8 @@ impl Molecule {
     
             old_energy = total_energy;
         }
+
+
         (total_energy, electronic_energy)
     }
 }
