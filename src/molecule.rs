@@ -127,25 +127,27 @@ impl Molecule {
         (h_core, x)
     }
 
-    pub fn hartree_fock(size: usize, h_core: DMatrix<f32>, nuclear_repulsion_energy: f32, x: &DMatrix<f32>, two_electron: Array4<f32>) -> (f32, f32) {
+    pub fn hartree_fock(size: usize, h_core: DMatrix<f32>, nuclear_repulsion_energy: f32, x: &DMatrix<f32>, two_electron: Array4<f32>) -> (f32, f32, i32) {
 
-        let mut p = DMatrix::<f32>::zeros(size, size);
         let mut total_energy: f32 = Default::default();
         let mut old_energy:f32 = Default::default();
         let mut electronic_energy: f32 = Default::default();
-        let treshold: f32 = 100.0;
+        let scf_max = 1000;
+        let mut iterations = Default::default();
 
         /*
          the term two_electron[[i, j, k, l]] is the coulomb coefficient
          the term two_electron[(i, k, l, j)] is the exchange coefficient
         */
 
-        while treshold > 1e-03 {
+        for scf in 0..scf_max {
+            let mut p = DMatrix::<f32>::zeros(size, size);
             let mut g = DMatrix::<f32>::zeros(size, size);
+            
             for i in 0..size {
                 for j in 0..size {
                     for k in 0..size {
-                        for l in k..size {
+                        for l in 0..size {
                             g[(i,j)] += p[(k,l)]*(two_electron[[i, j, k, l]]-0.5*two_electron[(i, k, l, j)]);
                         }
                     }
@@ -153,6 +155,20 @@ impl Molecule {
             }
 
             let fock = &h_core + g;
+
+            for i in 0..size {
+                for j in 0..size {
+                    electronic_energy += p[(i,0)]*h_core[(i,j)]+fock[(i,j)]
+                }
+            }
+
+            total_energy = (electronic_energy*0.5) + nuclear_repulsion_energy;
+
+            if (old_energy - total_energy).abs() < 1e-6 {
+                iterations = scf;
+                break
+            }
+
             let f_prime = x.adjoint()*fock*x;
             let c = x*f_prime.symmetric_eigenvalues();
 
@@ -162,18 +178,9 @@ impl Molecule {
                 }
             }
 
-            electronic_energy += 100.0;
 
-            total_energy = electronic_energy + nuclear_repulsion_energy;
-
-            if total_energy - old_energy < 1e-6 {
-                break
-            }
-    
             old_energy = total_energy;
         }
-
-
-        (total_energy, electronic_energy)
+        (total_energy, electronic_energy, iterations)
     }
 }

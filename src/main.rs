@@ -23,7 +23,7 @@ fn main() {
 
     //println!("gaussians: {}", serde_json::to_string(&gaussians).unwrap());
 
-    let size = gaussians.len();
+    let size = gaussians.len() -1;
 
     //println!("size: {}", size);
 
@@ -55,7 +55,7 @@ fn main() {
 
     //println!("h_core: {}\nx: {}", h_core, x);
 
-    let (total_energy, electronic_energy) = Molecule::hartree_fock(size, h_core, nuclear_repulsion_energy, &x, two_electron);
+    let (total_energy, electronic_energy, iterations) = Molecule::hartree_fock(size, h_core, nuclear_repulsion_energy, &x, two_electron);
 
-    println!("total energy: {}\nelectronic energy: {} ", total_energy, electronic_energy);
+    println!("self consistent field finished in {} iterations\ntotal energy: {}\nelectronic energy: {} ", iterations, total_energy, electronic_energy);
 }
