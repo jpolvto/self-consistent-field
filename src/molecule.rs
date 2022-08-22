@@ -2,7 +2,7 @@ use nalgebra::{Vector3, DMatrix};
 use ndarray::Array4;
 use serde::{Serialize, Deserialize};
 
-use crate::{basis_set::BasisSet, gaussian::Gaussian};
+use crate::{basis_set::BasisSet, gaussian::Orbital};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Molecule {
@@ -30,60 +30,60 @@ impl Molecule {
         energy
     }
 
-    pub fn create_gaussians (&self, basis_set: &BasisSet, n: usize) -> Vec<Gaussian> {
-        let mut gaussians: Vec<Gaussian> = Vec::new();
+    pub fn create_orbitals (&self, basisset: &BasisSet) -> Vec<Orbital> {
 
+        let mut result: Vec<Orbital> = Vec::new();
         for atom in &self.atoms {
-            for shell in &basis_set.elements.get(&atom.atomic_number).unwrap().electron_shells {
+
+            for shell in &basisset.elements.get(&atom.atomic_number).unwrap().electron_shells {
+
                 for orbital_coefficients in &shell.coefficients {
-                    for i in 0..=(n-1) {
-                        gaussians.push(Gaussian{ center: atom.position, coefficient: orbital_coefficients.get(i).unwrap().clone(), exponent: shell.exponents.get(i).unwrap().clone() })
-                    }
+                    result.push(Orbital::create_orbital(orbital_coefficients, atom.position, &shell.exponents));
                 }
             }
         }
-        gaussians
+
+        result
     }
 
-    pub fn kinetic_matrix(gaussians: &Vec<Gaussian>, size: usize) -> DMatrix<f32> {
+    pub fn kinetic_matrix(orbitals: &Vec<Orbital>, size: usize) -> DMatrix<f32> {
         let mut kinetic = DMatrix::<f32>::zeros(size, size);
 
         for i in 0..size {
             for j in i..size {
-                let a  = gaussians.get(i).unwrap();
-                let b = gaussians.get(j).unwrap();
-                let (p, r_ab, k_ab) = Gaussian::gaussian_product(a, b);
-                [kinetic[(i, j)], kinetic[(j, i)]] = [Gaussian::kinetic_energy_integral(a, b, &p, r_ab, k_ab); 2];
+                let a  = orbitals.get(i).unwrap();
+                let b = orbitals.get(j).unwrap();
+
+                [kinetic[(i, j)], kinetic[(j, i)]] = [Orbital::kinetic_energy(a, b); 2];
             }
         }
         kinetic
     }
 
-    pub fn overlap_matrix(gaussians: &Vec<Gaussian>, size: usize) -> DMatrix<f32> {
+    pub fn overlap_matrix(orbitals: &Vec<Orbital>, size: usize) -> DMatrix<f32> {
         let mut overlap: DMatrix<f32> = DMatrix::identity(size, size);
 
         for i in 0..size {
             for j in (i+1)..size {
-                let a  = gaussians.get(i).unwrap();
-                let b = gaussians.get(j).unwrap();
-                let (p, _r_ab, k_ab) = Gaussian::gaussian_product(a, b);
-                [overlap[(i, j)], overlap[(j, i)]] = [Gaussian::overlap_integral(&p, k_ab); 2];
+                let a  = orbitals.get(i).unwrap();
+                let b = orbitals.get(j).unwrap();
+
+                [overlap[(i, j)], overlap[(j, i)]] = [Orbital::overlap_energy(a, b); 2];
             }
         }
         overlap
     }
 
-    pub fn nuclear_attraction_matrix(gaussians: &Vec<Gaussian>, size: usize, atoms: &Vec<Atom>) -> DMatrix<f32> {
+    pub fn nuclear_attraction_matrix(orbitals: &Vec<Orbital>, size: usize, atoms: &Vec<Atom>) -> DMatrix<f32> {
         let mut nuclear_attraction = DMatrix::<f32>::zeros(size, size);
 
         for i in 0..size {
             for j in i..size {
-                let a  = gaussians.get(i).unwrap();
-                let b = gaussians.get(j).unwrap();
-                let (p, _r_ab, k_ab) = Gaussian::gaussian_product(a, b);
+                let a  = orbitals.get(i).unwrap();
+                let b = orbitals.get(j).unwrap();
 
                 for atom in atoms {
-                    let element = Gaussian::nuclear_attraction_integral(&atom, &p, k_ab);
+                    let element = Orbital::nuclear_repulsion_energy(a, b, &atom);
                     nuclear_attraction[(i,j)] += element;
                     if i != j {
                         nuclear_attraction[(j,i)] += element;
@@ -94,7 +94,7 @@ impl Molecule {
         nuclear_attraction    
     }
 
-    pub fn two_electron_matrix(gaussians: &Vec<Gaussian>, size: usize) -> Array4<f32> {
+    pub fn two_electron_matrix(orbitals: &Vec<Orbital>, size: usize) -> Array4<f32> {
         let mut two_electron = Array4::<f32>::zeros((size, size, size, size));
 
         for i in 0..size {
@@ -102,14 +102,12 @@ impl Molecule {
                 for k in 0..size {
                     for l in 0..size {
 
-                        let a  = gaussians.get(i).unwrap();
-                        let b = gaussians.get(j).unwrap();
-                        let c  = gaussians.get(k).unwrap();
-                        let d = gaussians.get(l).unwrap();
-
-                        let (p, _r_ab, k_ab) = Gaussian::gaussian_product(a, b);
-                        let (q, _r_cd, k_cd) = Gaussian::gaussian_product(c, d);
-                        [two_electron[[i, j, k, l]], two_electron[[i, k, l, j]]] = [Gaussian::two_electron_integral(&p, &q, k_ab, k_cd); 2]
+                        let a  = orbitals.get(i).unwrap();
+                        let b = orbitals.get(j).unwrap();
+                        let c  = orbitals.get(k).unwrap();
+                        let d = orbitals.get(l).unwrap();
+                    
+                        [two_electron[[i, j, k, l]], two_electron[[i, k, l, j]]] = [Orbital::two_electron_energy(a, b, c, d); 2]
                     }
                 }
             }

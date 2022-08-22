@@ -6,8 +6,10 @@ use std::env;
 use std::fs;
 
 use basis_set::BasisSet;
-use gaussian::Gaussian;
 use molecule::Molecule;
+
+use crate::gaussian::Orbital;
+
 fn main() {
     dotenv::dotenv().ok();
 
@@ -19,11 +21,11 @@ fn main() {
     let basis_set_contents = fs::read_to_string(basis_set_file_name).unwrap();
     let basis_set: BasisSet = serde_json::from_str(&basis_set_contents).unwrap();
 
-    let gaussians: Vec<Gaussian> = molecule.create_gaussians(&basis_set, 3);
+    let orbitals: Vec<Orbital> = molecule.create_orbitals(&basis_set);
 
-    //println!("gaussians: {}", serde_json::to_string(&gaussians).unwrap());
+    //println!("orbitals: {}", serde_json::to_string(&orbitals).unwrap());
 
-    let size = gaussians.len() -1;
+    let size = orbitals.len();
 
     //println!("size: {}", size);
 
@@ -35,19 +37,19 @@ fn main() {
 
     //println!("atoms: {}", serde_json::to_string(&atoms).unwrap());
 
-    let two_electron = Molecule::two_electron_matrix(&gaussians, size);
+    let two_electron = Molecule::two_electron_matrix(&orbitals, size);
 
     //println!("two_electron: {}", two_electron);
 
-    let kinetic = Molecule::kinetic_matrix(&gaussians, size);
+    let kinetic = Molecule::kinetic_matrix(&orbitals, size);
 
-    //println!("kinetic: {}", kinetic);
+    println!("kinetic: {}", kinetic);
 
-    let overlap = Molecule::overlap_matrix(&gaussians, size);
+    let overlap = Molecule::overlap_matrix(&orbitals, size);
 
     //println!("overlap: {}", overlap);
 
-    let nuclear_attraction_matrix = Molecule::nuclear_attraction_matrix(&gaussians, size, &atoms);
+    let nuclear_attraction_matrix = Molecule::nuclear_attraction_matrix(&orbitals, size, &atoms);
 
     //println!("nuclear_attraction_matrix: {}", nuclear_attraction_matrix);
 
