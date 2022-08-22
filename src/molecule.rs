@@ -81,7 +81,7 @@ impl Molecule {
                 let b = orbitals.get(j).unwrap();
 
                 for atom in atoms {
-                    let element = Orbital::two_center_contraction(a, b, &Atom { atomic_number: 0, position: Vector3::new(0.0, 0.0, 0.0) },Gaussian::nuclear_attraction_integral);
+                    let element = Orbital::two_center_contraction(a, b, atom,Gaussian::nuclear_attraction_integral);
                     nuclear_attraction[(i,j)] += element;
                     if i != j {
                         nuclear_attraction[(j,i)] += element;

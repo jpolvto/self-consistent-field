@@ -1,6 +1,6 @@
-use std::{f32::consts::PI, default};
+use std::{f32::consts::PI};
 use fastapprox::faster::erf;
-use nalgebra::{Vector3, ComplexField};
+use nalgebra::{Vector3};
 use serde::{Serialize, Deserialize};
 
 use crate::molecule::Atom;
