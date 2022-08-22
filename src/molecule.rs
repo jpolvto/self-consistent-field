@@ -2,7 +2,7 @@ use nalgebra::{Vector3, DMatrix};
 use ndarray::Array4;
 use serde::{Serialize, Deserialize};
 
-use crate::{basis_set::BasisSet, gaussian::Orbital};
+use crate::{basis_set::BasisSet, gaussian::{Orbital, Gaussian}};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Molecule {
@@ -19,7 +19,7 @@ pub struct Atom {
 }
 
 impl Molecule {
-    pub fn nuclear_repulsion_energy(&self) -> f32 {
+    pub fn nuclear_attraction_energy(&self) -> f32 {
         let mut energy: f32 = 0.0;
 
         for atom_a in 0..self.atoms.len() {
@@ -31,12 +31,10 @@ impl Molecule {
     }
 
     pub fn create_orbitals (&self, basisset: &BasisSet) -> Vec<Orbital> {
-
         let mut result: Vec<Orbital> = Vec::new();
+        
         for atom in &self.atoms {
-
             for shell in &basisset.elements.get(&atom.atomic_number).unwrap().electron_shells {
-
                 for orbital_coefficients in &shell.coefficients {
                     result.push(Orbital::create_orbital(orbital_coefficients, atom.position, &shell.exponents));
                 }
@@ -54,7 +52,7 @@ impl Molecule {
                 let a  = orbitals.get(i).unwrap();
                 let b = orbitals.get(j).unwrap();
 
-                [kinetic[(i, j)], kinetic[(j, i)]] = [Orbital::kinetic_energy(a, b); 2];
+                [kinetic[(i, j)], kinetic[(j, i)]] = [Orbital::two_center_contraction(a, b, &Atom { atomic_number: 0, position: Vector3::new(0.0, 0.0, 0.0) },Gaussian::kinetic_energy_integral); 2];
             }
         }
         kinetic
@@ -68,7 +66,7 @@ impl Molecule {
                 let a  = orbitals.get(i).unwrap();
                 let b = orbitals.get(j).unwrap();
 
-                [overlap[(i, j)], overlap[(j, i)]] = [Orbital::overlap_energy(a, b); 2];
+                [overlap[(i, j)], overlap[(j, i)]] = [Orbital::two_center_contraction(a, b, &Atom { atomic_number: 0, position: Vector3::new(0.0, 0.0, 0.0) },Gaussian::overlap_integral); 2];
             }
         }
         overlap
@@ -83,7 +81,7 @@ impl Molecule {
                 let b = orbitals.get(j).unwrap();
 
                 for atom in atoms {
-                    let element = Orbital::nuclear_repulsion_energy(a, b, &atom);
+                    let element = Orbital::two_center_contraction(a, b, &Atom { atomic_number: 0, position: Vector3::new(0.0, 0.0, 0.0) },Gaussian::nuclear_attraction_integral);
                     nuclear_attraction[(i,j)] += element;
                     if i != j {
                         nuclear_attraction[(j,i)] += element;
@@ -107,7 +105,7 @@ impl Molecule {
                         let c  = orbitals.get(k).unwrap();
                         let d = orbitals.get(l).unwrap();
                     
-                        [two_electron[[i, j, k, l]], two_electron[[i, k, l, j]]] = [Orbital::two_electron_energy(a, b, c, d); 2]
+                        [two_electron[[i, j, k, l]], two_electron[[i, k, l, j]]] = [Orbital::four_center_contraction(a, b, c, d, Gaussian::two_electron_integral); 2]
                     }
                 }
             }
@@ -125,9 +123,8 @@ impl Molecule {
         (h_core, x)
     }
 
-    pub fn hartree_fock(size: usize, h_core: DMatrix<f32>, nuclear_repulsion_energy: f32, x: &DMatrix<f32>, two_electron: Array4<f32>) -> (f32, f32, i32) {
+    pub fn hartree_fock(size: usize, h_core: DMatrix<f32>, nuclear_attraction_energy: f32, x: &DMatrix<f32>, two_electron: Array4<f32>) -> (f32, f32, i32) {
 
-        let mut total_energy: f32 = Default::default();
         let mut old_energy:f32 = Default::default();
         let mut electronic_energy: f32 = Default::default();
         let scf_max = 1000;
@@ -139,6 +136,7 @@ impl Molecule {
         */
 
         for scf in 0..scf_max {
+            let mut total_energy: f32 = Default::default();
             let mut p = DMatrix::<f32>::zeros(size, size);
             let mut g = DMatrix::<f32>::zeros(size, size);
             
@@ -160,7 +158,7 @@ impl Molecule {
                 }
             }
 
-            total_energy = (electronic_energy*0.5) + nuclear_repulsion_energy;
+            total_energy = (electronic_energy*0.5) + nuclear_attraction_energy;
 
             if (old_energy - total_energy).abs() < 1e-6 {
                 iterations = scf;
@@ -176,9 +174,8 @@ impl Molecule {
                 }
             }
 
-
             old_energy = total_energy;
         }
-        (total_energy, electronic_energy, iterations)
+        (old_energy, electronic_energy, iterations)
     }
 }

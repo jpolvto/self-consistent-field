@@ -29,9 +29,9 @@ fn main() {
 
     //println!("size: {}", size);
 
-    let nuclear_repulsion_energy = molecule.nuclear_repulsion_energy();
+    let nuclear_attraction_energy = molecule.nuclear_attraction_energy();
 
-    //println!("nuclear_repulsion_energy: {}", nuclear_repulsion_energy);
+    //println!("nuclear_attraction_energy: {}", nuclear_attraction_energy);
 
     let atoms = molecule.atoms;
 
@@ -39,7 +39,7 @@ fn main() {
 
     let two_electron = Molecule::two_electron_matrix(&orbitals, size);
 
-    //println!("two_electron: {}", two_electron);
+    println!("two_electron: {}", two_electron);
 
     let kinetic = Molecule::kinetic_matrix(&orbitals, size);
 
@@ -47,17 +47,17 @@ fn main() {
 
     let overlap = Molecule::overlap_matrix(&orbitals, size);
 
-    //println!("overlap: {}", overlap);
+    println!("overlap: {}", overlap);
 
     let nuclear_attraction_matrix = Molecule::nuclear_attraction_matrix(&orbitals, size, &atoms);
 
-    //println!("nuclear_attraction_matrix: {}", nuclear_attraction_matrix);
+    println!("nuclear_attraction_matrix: {}", nuclear_attraction_matrix);
 
     let (h_core, x) = Molecule::initial_values(overlap, kinetic, nuclear_attraction_matrix);
 
     //println!("h_core: {}\nx: {}", h_core, x);
 
-    let (total_energy, electronic_energy, iterations) = Molecule::hartree_fock(size, h_core, nuclear_repulsion_energy, &x, two_electron);
+    let (total_energy, electronic_energy, iterations) = Molecule::hartree_fock(size, h_core, nuclear_attraction_energy, &x, two_electron);
 
     println!("self consistent field finished in {} iterations\ntotal energy: {}\nelectronic energy: {} ", iterations, total_energy, electronic_energy);
 }
