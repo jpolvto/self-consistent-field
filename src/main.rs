@@ -53,11 +53,7 @@ fn main() {
 
     println!("nuclear_attraction_matrix: {}", nuclear_attraction_matrix);
 
-    let (h_core, x) = Molecule::initial_values(overlap, kinetic, nuclear_attraction_matrix);
-
-    //println!("h_core: {}\nx: {}", h_core, x);
-
-    let (total_energy, electronic_energy, iterations) = Molecule::hartree_fock(size, h_core, nuclear_attraction_energy, &x, two_electron);
+    let (total_energy, electronic_energy, iterations) = Molecule::hartree_fock(size, overlap, kinetic, nuclear_attraction_matrix, two_electron, nuclear_attraction_energy);
 
     println!("self consistent field finished in {} iterations\ntotal energy: {}\nelectronic energy: {} ", iterations, total_energy, electronic_energy);
 }

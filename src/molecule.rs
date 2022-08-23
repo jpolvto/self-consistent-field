@@ -113,22 +113,17 @@ impl Molecule {
         two_electron
     }
 
-    pub fn initial_values(overlap: DMatrix<f32>, kinetic: DMatrix<f32>, potential: DMatrix<f32>) -> (DMatrix<f32>, DMatrix<f32>) {
-
-        let h_core = &kinetic*&potential;
-        let overlap_eigen = overlap.symmetric_eigen();
-        let mapped_eigenvalues = overlap_eigen.eigenvalues.map(|x: f32| x.powf(-0.5));
-        let x = &overlap_eigen.eigenvectors * DMatrix::from_diagonal(&mapped_eigenvalues)*&overlap_eigen.eigenvectors.adjoint();
-
-        (h_core, x)
-    }
-
-    pub fn hartree_fock(size: usize, h_core: DMatrix<f32>, nuclear_attraction_energy: f32, x: &DMatrix<f32>, two_electron: Array4<f32>) -> (f32, f32, i32) {
+    pub fn hartree_fock(size: usize, overlap: DMatrix<f32>, kinetic: DMatrix<f32>, nuclear_attraction_matrix: DMatrix<f32>, two_electron: Array4<f32>, nuclear_attraction_energy: f32) -> (f32, f32, i32) {
 
         let mut old_energy:f32 = Default::default();
         let mut electronic_energy: f32 = Default::default();
         let scf_max = 1000;
         let mut iterations = Default::default();
+
+        let h_core = &kinetic*&nuclear_attraction_matrix;
+        let overlap_eigen = overlap.symmetric_eigen();
+        let mapped_eigenvalues = overlap_eigen.eigenvalues.map(|x: f32| x.powf(-0.5));
+        let x = &overlap_eigen.eigenvectors * DMatrix::from_diagonal(&mapped_eigenvalues)*&overlap_eigen.eigenvectors.adjoint();
 
         /*
          the term two_electron[[i, j, k, l]] is the coulomb coefficient
@@ -165,8 +160,8 @@ impl Molecule {
                 break
             }
 
-            let f_prime = x.adjoint()*fock*x;
-            let c = x*f_prime.symmetric_eigenvalues();
+            let f_prime = &x.adjoint()*fock*&x;
+            let c = &x*f_prime.symmetric_eigenvalues();
 
             for i in 0..size {
                 for j in 0..size {

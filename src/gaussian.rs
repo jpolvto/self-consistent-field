@@ -84,7 +84,7 @@ pub struct Gaussian {
 
 impl Gaussian {
 
-    pub fn overlap_integral(a: &Gaussian, b: &Gaussian, atom: &Atom) -> f32 {
+    pub fn overlap_integral(a: &Gaussian, b: &Gaussian, _atom: &Atom) -> f32 {
 
         //Calculates the overlap integral between two gaussian functions
 
@@ -102,7 +102,7 @@ impl Gaussian {
 
     }
     
-    pub fn kinetic_energy_integral(a: &Gaussian, b: &Gaussian, atom: &Atom) -> f32 {
+    pub fn kinetic_energy_integral(a: &Gaussian, b: &Gaussian, _atom: &Atom) -> f32 {
 
         //Calculates the kinetic energy integrals for un-normalised primitives
 
