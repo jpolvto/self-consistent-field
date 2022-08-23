@@ -26,7 +26,7 @@ impl Orbital {
         Orbital { exponents: exponents.clone(), gaussians }
     }
 
-    pub fn two_center_contraction<F>(a: &Orbital, b: &Orbital, atom: &Atom, integral: F) -> f32
+    pub fn two_center_contraction_with_atom<F>(a: &Orbital, b: &Orbital, atom: &Atom, integral: F) -> f32
     where F: Fn(&Gaussian, &Gaussian, &Atom) -> f32 {
         let mut total: f32 = Default::default();
 
@@ -39,6 +39,24 @@ impl Orbital {
                 let exp_b = b.exponents.get(j).unwrap();
 
                 total += exp_a*exp_b*integral(gaussian_a, gaussian_b, atom)
+            }
+        }
+        total
+    }
+
+    pub fn two_center_contraction<F>(a: &Orbital, b: &Orbital, integral: F) -> f32
+    where F: Fn(&Gaussian, &Gaussian) -> f32 {
+        let mut total: f32 = Default::default();
+
+        for i in 0..2 {
+            for j in 0..2 {
+                let gaussian_a = a.gaussians.get(i).unwrap();
+                let gaussian_b = b.gaussians.get(j).unwrap();
+
+                let exp_a = a.exponents.get(i).unwrap();
+                let exp_b = b.exponents.get(j).unwrap();
+
+                total += exp_a*exp_b*integral(gaussian_a, gaussian_b)
             }
         }
         total
@@ -84,7 +102,7 @@ pub struct Gaussian {
 
 impl Gaussian {
 
-    pub fn overlap_integral(a: &Gaussian, b: &Gaussian, _atom: &Atom) -> f32 {
+    pub fn overlap_integral(a: &Gaussian, b: &Gaussian) -> f32 {
 
         //Calculates the overlap integral between two gaussian functions
 
@@ -102,7 +120,7 @@ impl Gaussian {
 
     }
     
-    pub fn kinetic_energy_integral(a: &Gaussian, b: &Gaussian, _atom: &Atom) -> f32 {
+    pub fn kinetic_energy_integral(a: &Gaussian, b: &Gaussian) -> f32 {
 
         //Calculates the kinetic energy integrals for un-normalised primitives
 

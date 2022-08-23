@@ -52,7 +52,7 @@ impl Molecule {
                 let a  = orbitals.get(i).unwrap();
                 let b = orbitals.get(j).unwrap();
 
-                [kinetic[(i, j)], kinetic[(j, i)]] = [Orbital::two_center_contraction(a, b, &Atom { atomic_number: 0, position: Vector3::new(0.0, 0.0, 0.0) },Gaussian::kinetic_energy_integral); 2];
+                [kinetic[(i, j)], kinetic[(j, i)]] = [Orbital::two_center_contraction(a, b, Gaussian::kinetic_energy_integral); 2];
             }
         }
         kinetic
@@ -66,7 +66,7 @@ impl Molecule {
                 let a  = orbitals.get(i).unwrap();
                 let b = orbitals.get(j).unwrap();
 
-                [overlap[(i, j)], overlap[(j, i)]] = [Orbital::two_center_contraction(a, b, &Atom { atomic_number: 0, position: Vector3::new(0.0, 0.0, 0.0) },Gaussian::overlap_integral); 2];
+                [overlap[(i, j)], overlap[(j, i)]] = [Orbital::two_center_contraction(a, b, Gaussian::overlap_integral); 2];
             }
         }
         overlap
@@ -81,7 +81,7 @@ impl Molecule {
                 let b = orbitals.get(j).unwrap();
 
                 for atom in atoms {
-                    let element = Orbital::two_center_contraction(a, b, atom,Gaussian::nuclear_attraction_integral);
+                    let element = Orbital::two_center_contraction_with_atom(a, b, atom,Gaussian::nuclear_attraction_integral);
                     nuclear_attraction[(i,j)] += element;
                     if i != j {
                         nuclear_attraction[(j,i)] += element;
