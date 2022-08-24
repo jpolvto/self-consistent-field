@@ -17,21 +17,27 @@ pub struct Gaussian {
 
 impl Gaussian {
 
+    pub fn gaussian_product(a: &Gaussian, b: &Gaussian) -> (Gaussian, f32, f32) {
+
+        // function to calculate a gaussian product, and to have some convenient variables
+
+        let r_ab = (a.center-b.center).norm_squared();
+        let coefficient = a.coefficient+b.coefficient;
+        let k = (4.0*a.coefficient*b.coefficient/(PI.powf(2.0))).powf(0.75)*(-a.coefficient*b.coefficient/coefficient*r_ab).exp();
+        let center = (a.coefficient*a.center+b.coefficient*b.center)/coefficient;
+
+        (Gaussian {center, coefficient}, r_ab, k)
+    }
+
     pub fn overlap_integral(a: &Gaussian, b: &Gaussian) -> f32 {
 
         //Calculates the overlap integral between two gaussian functions
 
-        let alpha = a.coefficient;
-        let beta = b.coefficient;
-        let r_a = a.center;
-        let r_b = b.center;
+        let (p, _r_ab, k) = Gaussian::gaussian_product(a, b);
+
+        (PI/p.coefficient).powf(1.5)*k
     
         //normalization constant
-        let n = (2.0*alpha/PI).powf(0.75)*(2.0*beta/PI).powf(0.75);
-    
-        let mut matrix_element= n*(PI/(alpha+beta)).powf(1.5);
-        matrix_element *= -alpha*beta/(alpha+beta).exp()*(r_a-r_b).norm_squared();
-        matrix_element
 
     }
     
@@ -39,19 +45,10 @@ impl Gaussian {
 
         //Calculates the kinetic energy integrals for un-normalised primitives
 
-        let alpha = a.coefficient;
-        let beta = b.coefficient;
-        let r_a = a.center;
-        let r_b = b.center;
-    
-        //normalization constant
-        let n = (2.0*alpha/PI).powf(0.75)*(2.0*beta/PI).powf(0.75);
-    
-        let mut matrix_element = n*alpha*beta/(alpha+beta);
-        matrix_element *= 3.0-2.0*alpha*beta/((alpha+beta)/(r_a-r_b).norm_squared());
-        matrix_element *= (PI/(alpha+beta)).powf(1.5);
-        matrix_element *= (-alpha*beta/(alpha+beta)*(r_a-r_b).norm_squared()).exp();
-        matrix_element
+        let (p, r_ab, k) = Gaussian::gaussian_product(a, b);
+
+        (a.coefficient*b.coefficient/p.coefficient)*(3.0-2.0*
+        (a.coefficient*b.coefficient/p.coefficient)*r_ab)*(PI/p.coefficient).powf(1.5)*k
 
     }
 
@@ -59,29 +56,14 @@ impl Gaussian {
 
         //Calculates the un-normalised nuclear attraction integrals
 
-        let alpha = a.coefficient;
-        let beta = b.coefficient;
-        let r_a = a.center;
-        let r_b = b.center;
-        let r_p = (alpha*r_a + beta*r_b)/(alpha + beta);
-    
-        //normalization constant
-        let n = (2.0*alpha/PI).powf(0.75)*(2.0*beta/PI).powf(0.75);
+        let (p, _r_ab, k) = Gaussian::gaussian_product(a, b);
 
-        let mut matrix_element = n*-2.0*PI/(alpha+beta)*atom.atomic_number as f32;
-        matrix_element *= (-alpha*beta/(alpha+beta)*(r_a-r_b).norm_squared()).exp();
-    
-        let t = (alpha+beta)*(r_p-atom.position).norm_squared();
+        let mut matrix_element = (-2.0*PI*atom.atomic_number as f32/p.coefficient)*k;
 
-        match Self::f_zero(t) {
-            Some(i) => {
-                return matrix_element*i
-            }
-            None => {
-                return matrix_element
-            }
+        if let Some(i) = Gaussian::f0(p.coefficient*(p.center-atom.position).norm_squared()) {
+            matrix_element *= i;
         }
-
+        matrix_element
     }
     
     pub fn two_electron_integral(a: &Gaussian, b: &Gaussian, c: &Gaussian, d: &Gaussian) -> f32 {
@@ -92,41 +74,18 @@ impl Gaussian {
         r_p is the distance between a and b, r_q is the distance between c and d
         */
 
-        let alpha = a.coefficient;
-        let beta = b.coefficient;
-        let gamma = c.coefficient;
-        let delta = d.coefficient;
+        let (p, _r_ab, k_ab) = Gaussian::gaussian_product(a, b);
+        let (q, _r_cd, k_cd) = Gaussian::gaussian_product(c, d);
 
-        let r_a = a.center;
-        let r_b = b.center;
-        let r_c = c.center;
-        let r_d = d.center;
-        let r_p = (alpha*r_a + beta*r_b)/(alpha + beta);
-        let r_q = (gamma*r_c + delta*r_d)/(gamma + delta);
+        let mut matrix_element = 2.0*PI.powf(2.5)/(p.coefficient*q.coefficient*(p.coefficient+q.coefficient)).sqrt()*k_ab*k_cd;
 
-        //normalization constant
-
-        let mut n = (2.0*alpha/PI).powf(0.75)*(2.0*beta/PI).powf(0.75);
-        n *= (2.0*gamma/PI).powf(0.75)*(2.0*delta/PI).powf(0.75);
-    
-        let mut matrix_element = n*2.0*PI.powf(2.6);
-        matrix_element /= (alpha+beta)*(gamma+delta)*(alpha+beta+gamma+delta).sqrt();
-        matrix_element *= (-alpha*beta/(alpha+beta)*(r_a-r_b).norm_squared()-gamma*delta/(gamma+delta)*(r_c-r_d).norm_squared()).exp();
-
-        let t = (alpha+beta)*(gamma+delta)/(alpha+beta+gamma+delta)*(r_p-r_q).norm_squared();
-
-        match Self::f_zero(t) {
-            Some(i) => {
-                return matrix_element*i
-            }
-            None => {
-                return matrix_element
-            }
+        if let Some(i) = Gaussian::f0(p.coefficient*q.coefficient/(p.coefficient+q.coefficient)*(p.center-q.center).norm_squared()) {
+            matrix_element *= i;
         }
-
+        matrix_element
     }
 
-    fn f_zero(t: f32) -> Option<f32> {
+    fn f0(t: f32) -> Option<f32> {
 
         // single electron error function
         
