@@ -21,8 +21,8 @@ impl Orbital {
     where F: Fn(&Gaussian, &Gaussian, &Atom) -> f32 {
         let mut total: f32 = Default::default();
 
-        for i in 0..a.n {
-            for j in 0..b.n {
+        for i in 0..sto_ng {
+            for j in 0..sto_ng {
                 let gaussian_a = a.gaussians.get(i).unwrap();
                 let gaussian_b = b.gaussians.get(j).unwrap();
 
