@@ -1,95 +1,10 @@
-use std::{f32::consts::PI};
-use fastapprox::faster::erf;
-use nalgebra::{Vector3};
+use std::f32::consts::PI;
+
+use fastapprox::fast::erf;
+use nalgebra::Vector3;
 use serde::{Serialize, Deserialize};
 
 use crate::molecule::Atom;
-
-//Slater Type Orbital fit with N primative gausians (STO-NG) type basis
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Orbital {
-    //contraction coefficients
-    exponents: Vec<f32>,
-
-    //primitive Gaussians
-    gaussians: Vec<Gaussian>
-}
-
-impl Orbital {
-
-    pub fn create_orbital(orbital_coefficients: &Vec<f32>, center: Vector3<f32>, exponents: &Vec<f32>) -> Orbital {
-
-        let mut gaussians: Vec<Gaussian> = Vec::new();
-        for coefficient in orbital_coefficients {
-            gaussians.push( Gaussian { center, coefficient: coefficient.clone() })
-        }
-        Orbital { exponents: exponents.clone(), gaussians }
-    }
-
-    pub fn two_center_contraction_with_atom<F>(a: &Orbital, b: &Orbital, atom: &Atom, integral: F) -> f32
-    where F: Fn(&Gaussian, &Gaussian, &Atom) -> f32 {
-        let mut total: f32 = Default::default();
-
-        for i in 0..2 {
-            for j in 0..2 {
-                let gaussian_a = a.gaussians.get(i).unwrap();
-                let gaussian_b = b.gaussians.get(j).unwrap();
-
-                let exp_a = a.exponents.get(i).unwrap();
-                let exp_b = b.exponents.get(j).unwrap();
-
-                total += exp_a*exp_b*integral(gaussian_a, gaussian_b, atom)
-            }
-        }
-        total
-    }
-
-    pub fn two_center_contraction<F>(a: &Orbital, b: &Orbital, integral: F) -> f32
-    where F: Fn(&Gaussian, &Gaussian) -> f32 {
-        let mut total: f32 = Default::default();
-
-        for i in 0..2 {
-            for j in 0..2 {
-                let gaussian_a = a.gaussians.get(i).unwrap();
-                let gaussian_b = b.gaussians.get(j).unwrap();
-
-                let exp_a = a.exponents.get(i).unwrap();
-                let exp_b = b.exponents.get(j).unwrap();
-
-                total += exp_a*exp_b*integral(gaussian_a, gaussian_b)
-            }
-        }
-        total
-    }
-
-    pub fn four_center_contraction<F>(a: &Orbital, b: &Orbital, c: &Orbital, d: &Orbital, integral: F) -> f32
-    where F: Fn(&Gaussian, &Gaussian, &Gaussian, &Gaussian) -> f32 {
-        let mut total: f32 = Default::default();
-        
-        for i in 0..2 {
-            for j in 0..2 {
-                for k in 0..2 {
-                    for l in 0..2 {
-
-                        let gaussian_a = a.gaussians.get(i).unwrap();
-                        let gaussian_b = b.gaussians.get(j).unwrap();
-                        let gaussian_c = c.gaussians.get(k).unwrap();
-                        let gaussian_d = d.gaussians.get(l).unwrap();
-
-                        let exp_a = a.exponents.get(i).unwrap();
-                        let exp_b = b.exponents.get(j).unwrap();
-                        let exp_c = c.exponents.get(k).unwrap();
-                        let exp_d = d.exponents.get(l).unwrap();
-
-                        total += exp_a*exp_b*exp_c*exp_d*integral(gaussian_a, gaussian_b, gaussian_c, gaussian_d)
-                    }
-                }
-            }
-        }
-        total
-    }
-
-}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Gaussian {
@@ -115,7 +30,7 @@ impl Gaussian {
         let n = (2.0*alpha/PI).powf(0.75)*(2.0*beta/PI).powf(0.75);
     
         let mut matrix_element= n*(PI/(alpha+beta)).powf(1.5);
-        matrix_element *= -alpha*beta/(alpha+beta).exp() * (r_a-r_b).norm_squared();
+        matrix_element *= -alpha*beta/(alpha+beta).exp()*(r_a-r_b).norm_squared();
         matrix_element
 
     }
@@ -136,7 +51,6 @@ impl Gaussian {
         matrix_element *= 3.0-2.0*alpha*beta/((alpha+beta)/(r_a-r_b).norm_squared());
         matrix_element *= (PI/(alpha+beta)).powf(1.5);
         matrix_element *= (-alpha*beta/(alpha+beta)*(r_a-r_b).norm_squared()).exp();
-
         matrix_element
 
     }

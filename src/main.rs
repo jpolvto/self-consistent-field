@@ -1,14 +1,14 @@
 mod molecule;
-mod basis_set;
+mod orbital;
 mod gaussian;
 
 use std::env;
 use std::fs;
 
-use basis_set::BasisSet;
 use molecule::Molecule;
 
-use crate::gaussian::Orbital;
+use crate::orbital::Orbital;
+
 
 fn main() {
     dotenv::dotenv().ok();
@@ -17,25 +17,21 @@ fn main() {
     let input_contents = fs::read_to_string(input_file_name).unwrap();
     let molecule: Molecule = serde_json::from_str(&input_contents).unwrap();
 
-    let basis_set_file_name = env::var("SELF_CONSISTENT_FIELD_BASIS_SET_FILE_NAME").unwrap();
-    let basis_set_contents = fs::read_to_string(basis_set_file_name).unwrap();
-    let basis_set: BasisSet = serde_json::from_str(&basis_set_contents).unwrap();
+    let orbitals: Vec<Orbital> = molecule.create_orbitals();
 
-    let orbitals: Vec<Orbital> = molecule.create_orbitals(&basis_set);
-
-    //println!("orbitals: {}", serde_json::to_string(&orbitals).unwrap());
+    println!("orbitals: {}", serde_json::to_string(&orbitals).unwrap());
 
     let size = orbitals.len();
 
-    //println!("size: {}", size);
+    println!("size: {}", size);
 
     let nuclear_attraction_energy = molecule.nuclear_attraction_energy();
 
-    //println!("nuclear_attraction_energy: {}", nuclear_attraction_energy);
+    println!("nuclear_attraction_energy: {}", nuclear_attraction_energy);
 
     let atoms = molecule.atoms;
 
-    //println!("atoms: {}", serde_json::to_string(&atoms).unwrap());
+    println!("atoms: {}", serde_json::to_string(&atoms).unwrap());
 
     let two_electron = Molecule::two_electron_matrix(&orbitals, size);
 
