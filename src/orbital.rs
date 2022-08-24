@@ -17,7 +17,7 @@ pub struct Orbital {
 
 impl Orbital {
 
-    pub fn two_center_contraction_with_atom<F>(a: &Orbital, b: &Orbital, atom: &Atom, integral: F) -> f32
+    pub fn two_center_contraction_with_atom<F>(a: &Orbital, b: &Orbital, sto_ng: usize, atom: &Atom, integral: F) -> f32
     where F: Fn(&Gaussian, &Gaussian, &Atom) -> f32 {
         let mut total: f32 = Default::default();
 
@@ -35,12 +35,12 @@ impl Orbital {
         total
     }
 
-    pub fn two_center_contraction<F>(a: &Orbital, b: &Orbital, integral: F) -> f32
+    pub fn two_center_contraction<F>(a: &Orbital, b: &Orbital, sto_ng: usize, integral: F) -> f32
     where F: Fn(&Gaussian, &Gaussian) -> f32 {
         let mut total: f32 = Default::default();
 
-        for i in 0..a.n {
-            for j in 0..b.n {
+        for i in 0..sto_ng {
+            for j in 0..sto_ng {
                 let gaussian_a = a.gaussians.get(i).unwrap();
                 let gaussian_b = b.gaussians.get(j).unwrap();
 
@@ -53,14 +53,14 @@ impl Orbital {
         total
     }
 
-    pub fn four_center_contraction<F>(a: &Orbital, b: &Orbital, c: &Orbital, d: &Orbital, integral: F) -> f32
+    pub fn four_center_contraction<F>(a: &Orbital, b: &Orbital, c: &Orbital, d: &Orbital, sto_ng: usize, integral: F) -> f32
     where F: Fn(&Gaussian, &Gaussian, &Gaussian, &Gaussian) -> f32 {
         let mut total: f32 = Default::default();
         
-        for i in 0..a.n {
-            for j in 0..b.n {
-                for k in 0..c.n {
-                    for l in 0..d.n {
+        for i in 0..sto_ng {
+            for j in 0..sto_ng {
+                for k in 0..sto_ng {
+                    for l in 0..sto_ng {
 
                         let gaussian_a = a.gaussians.get(i).unwrap();
                         let gaussian_b = b.gaussians.get(j).unwrap();

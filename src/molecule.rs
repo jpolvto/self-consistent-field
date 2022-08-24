@@ -47,7 +47,7 @@ impl Molecule {
         orbitals
     }
 
-    pub fn kinetic_matrix(orbitals: &Vec<Orbital>, size: usize) -> DMatrix<f32> {
+    pub fn kinetic_matrix(orbitals: &Vec<Orbital>, sto_ng: usize, size: usize) -> DMatrix<f32> {
         let mut kinetic = DMatrix::<f32>::zeros(size, size);
 
         for i in 0..size {
@@ -55,14 +55,14 @@ impl Molecule {
                 let a  = orbitals.get(i).unwrap();
                 let b = orbitals.get(j).unwrap();
 
-                [kinetic[(i, j)], kinetic[(j, i)]] = [Orbital::two_center_contraction(a, b, Gaussian::kinetic_energy_integral); 2];
+                [kinetic[(i, j)], kinetic[(j, i)]] = [Orbital::two_center_contraction(a, b, sto_ng, Gaussian::kinetic_energy_integral); 2];
                 
             }
         }
         kinetic
     }
 
-    pub fn overlap_matrix(orbitals: &Vec<Orbital>, size: usize) -> DMatrix<f32> {
+    pub fn overlap_matrix(orbitals: &Vec<Orbital>, sto_ng: usize, size: usize) -> DMatrix<f32> {
         let mut overlap: DMatrix<f32> = DMatrix::identity(size, size);
 
         for i in 0..size {
@@ -70,13 +70,13 @@ impl Molecule {
                 let a  = orbitals.get(i).unwrap();
                 let b = orbitals.get(j).unwrap();
 
-                [overlap[(i, j)], overlap[(j, i)]] = [Orbital::two_center_contraction(a, b, Gaussian::overlap_integral); 2];
+                [overlap[(i, j)], overlap[(j, i)]] = [Orbital::two_center_contraction(a, b, sto_ng, Gaussian::overlap_integral); 2];
             }
         }
         overlap
     }
 
-    pub fn nuclear_attraction_matrix(orbitals: &Vec<Orbital>, size: usize, atoms: &Vec<Atom>) -> DMatrix<f32> {
+    pub fn nuclear_attraction_matrix(orbitals: &Vec<Orbital>, sto_ng: usize, size: usize, atoms: &Vec<Atom>) -> DMatrix<f32> {
         let mut nuclear_attraction = DMatrix::<f32>::zeros(size, size);
 
         for i in 0..size {
@@ -85,7 +85,7 @@ impl Molecule {
                 let b = orbitals.get(j).unwrap();
 
                 for atom in atoms {
-                    let element = Orbital::two_center_contraction_with_atom(a, b, atom,Gaussian::nuclear_attraction_integral);
+                    let element = Orbital::two_center_contraction_with_atom(a, b, sto_ng, atom,Gaussian::nuclear_attraction_integral);
                     nuclear_attraction[(i,j)] += element;
                     if i != j {
                         nuclear_attraction[(j,i)] += element;
@@ -96,7 +96,7 @@ impl Molecule {
         nuclear_attraction    
     }
 
-    pub fn two_electron_matrix(orbitals: &Vec<Orbital>, size: usize) -> Array4<f32> {
+    pub fn two_electron_matrix(orbitals: &Vec<Orbital>, sto_ng: usize, size: usize, ) -> Array4<f32> {
         let mut two_electron = Array4::<f32>::zeros((size, size, size, size));
 
         for i in 0..size {
@@ -109,7 +109,7 @@ impl Molecule {
                         let c  = orbitals.get(k).unwrap();
                         let d = orbitals.get(l).unwrap();
                     
-                        [two_electron[[i, j, k, l]], two_electron[[i, k, l, j]]] = [Orbital::four_center_contraction(a, b, c, d, Gaussian::two_electron_integral); 2]
+                        [two_electron[[i, j, k, l]], two_electron[[i, k, l, j]]] = [Orbital::four_center_contraction(a, b, c, d, sto_ng, Gaussian::two_electron_integral); 2]
                     }
                 }
             }

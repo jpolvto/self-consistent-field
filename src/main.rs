@@ -17,6 +17,8 @@ fn main() {
     let input_contents = fs::read_to_string(input_file_name).unwrap();
     let molecule: Molecule = serde_json::from_str(&input_contents).unwrap();
 
+    const sto_ng: usize = 3;
+
     let orbitals: Vec<Orbital> = molecule.create_orbitals();
 
     println!("orbitals: {}", serde_json::to_string(&orbitals).unwrap());
@@ -33,19 +35,19 @@ fn main() {
 
     println!("atoms: {}", serde_json::to_string(&atoms).unwrap());
 
-    let two_electron = Molecule::two_electron_matrix(&orbitals, size);
+    let two_electron = Molecule::two_electron_matrix(&orbitals, sto_ng, size);
 
     println!("two_electron: {}", two_electron);
 
-    let kinetic = Molecule::kinetic_matrix(&orbitals, size);
+    let kinetic = Molecule::kinetic_matrix(&orbitals, sto_ng, size);
 
     println!("kinetic: {}", kinetic);
 
-    let overlap = Molecule::overlap_matrix(&orbitals, size);
+    let overlap = Molecule::overlap_matrix(&orbitals, sto_ng, size);
 
     println!("overlap: {}", overlap);
 
-    let nuclear_attraction_matrix = Molecule::nuclear_attraction_matrix(&orbitals, size, &atoms);
+    let nuclear_attraction_matrix = Molecule::nuclear_attraction_matrix(&orbitals,sto_ng, size, &atoms);
 
     println!("nuclear_attraction_matrix: {}", nuclear_attraction_matrix);
 
