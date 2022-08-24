@@ -1,5 +1,3 @@
-use std::default;
-
 use nalgebra::{Vector3, DMatrix};
 use ndarray::Array4;
 use serde::{Serialize, Deserialize};
@@ -137,7 +135,6 @@ impl Molecule {
         */
 
         for scf_iter in 0..scf_max {
-            let mut total_energy: f32 = Default::default();
             let mut p = DMatrix::<f32>::zeros(size, size);
             let mut g = DMatrix::<f32>::zeros(size, size);
             
@@ -159,10 +156,10 @@ impl Molecule {
                 }
             }
 
-            total_energy = (electronic_energy*0.5)+nuclear_attraction_energy;
+            let total_energy = (electronic_energy*0.5)+nuclear_attraction_energy;
 
             if (old_energy - total_energy).abs() < 1e-6 {
-                iterations += 1;
+                iterations = scf_iter;
                 break
             }
 
