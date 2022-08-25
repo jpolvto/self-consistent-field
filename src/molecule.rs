@@ -47,7 +47,8 @@ impl Molecule {
         orbitals
     }
 
-    pub fn kinetic_matrix(orbitals: &Vec<Orbital>, sto_ng: usize, size: usize) -> DMatrix<f32> {
+    pub fn kinetic_matrix(orbitals: &Vec<Orbital>, sto_ng: usize) -> DMatrix<f32> {
+        let size = orbitals.len();
         let mut kinetic = DMatrix::<f32>::zeros(size, size);
 
         for i in 0..size {
@@ -62,7 +63,8 @@ impl Molecule {
         kinetic
     }
 
-    pub fn overlap_matrix(orbitals: &Vec<Orbital>, sto_ng: usize, size: usize) -> DMatrix<f32> {
+    pub fn overlap_matrix(orbitals: &Vec<Orbital>, sto_ng: usize) -> DMatrix<f32> {
+        let size = orbitals.len();
         let mut overlap: DMatrix<f32> = DMatrix::identity(size, size);
 
         for i in 0..size {
@@ -76,7 +78,8 @@ impl Molecule {
         overlap
     }
 
-    pub fn nuclear_attraction_matrix(orbitals: &Vec<Orbital>, sto_ng: usize, size: usize, atoms: &Vec<Atom>) -> DMatrix<f32> {
+    pub fn nuclear_attraction_matrix(orbitals: &Vec<Orbital>, sto_ng: usize, atoms: &Vec<Atom>) -> DMatrix<f32> {
+        let size = orbitals.len();
         let mut nuclear_attraction = DMatrix::<f32>::zeros(size, size);
 
         for i in 0..size {
@@ -96,7 +99,8 @@ impl Molecule {
         nuclear_attraction    
     }
 
-    pub fn two_electron_matrix(orbitals: &Vec<Orbital>, sto_ng: usize, size: usize, ) -> Array4<f32> {
+    pub fn two_electron_matrix(orbitals: &Vec<Orbital>, sto_ng: usize ) -> Array4<f32> {
+        let size = orbitals.len();
         let mut two_electron = Array4::<f32>::zeros((size, size, size, size));
 
         for i in 0..size {
@@ -123,6 +127,9 @@ impl Molecule {
         let mut electronic_energy: f32 = Default::default();
         let scf_max = 100;
         let mut iterations = Default::default();
+        let mut p = DMatrix::<f32>::zeros(size, size);
+        let mut p_previous = DMatrix::<f32>::zeros(size, size);
+        let mut p_list: Vec<DMatrix<f32>> = Default::default();
 
         let h_core = &kinetic+&nuclear_attraction_matrix;
         let overlap_eigen = overlap.symmetric_eigen();
@@ -135,7 +142,7 @@ impl Molecule {
         */
 
         for scf_iter in 0..scf_max {
-            let mut p = DMatrix::<f32>::zeros(size, size);
+
             let mut g = DMatrix::<f32>::zeros(size, size);
             
             for i in 0..size {
@@ -148,19 +155,14 @@ impl Molecule {
                 }
             }
 
+            println!("g: {}", g);
+
             let f = &h_core + g;
 
             for i in 0..size {
                 for j in 0..size {
                     electronic_energy += p[(i,0)]*h_core[(i,j)]+f[(i,j)]
                 }
-            }
-
-            let total_energy = (electronic_energy*0.5)+nuclear_attraction_energy;
-
-            if (old_energy - total_energy).abs() < 1e-6 {
-                iterations = scf_iter;
-                break
             }
 
             let f_prime = &x.adjoint()*f*&x;
@@ -174,7 +176,6 @@ impl Molecule {
                 }
             }
 
-            old_energy = total_energy;
             iterations += 1;
         }
         (old_energy, electronic_energy, iterations)
