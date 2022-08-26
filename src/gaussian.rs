@@ -17,25 +17,25 @@ pub struct Gaussian {
 
 impl Gaussian {
 
-    pub fn gaussian_product(a: &Gaussian, b: &Gaussian) -> (Gaussian, f32, f32) {
+    pub fn gaussian_product(&self, other: &Gaussian) -> (Gaussian, f32, f32) {
 
         // function to calculate a gaussian product, and to have some convenient variables
 
-        let diff = (a.center-b.center).norm_squared();
-        let coefficient = a.coefficient + b.coefficient;
-        let n = (4.0*a.coefficient*b.coefficient/(PI.powf(2.0))).powf(0.75);
-        let k = n*(-a.coefficient*b.coefficient/coefficient*diff).exp();
+        let diff = (self.center-other.center).norm_squared();
+        let coefficient = self.coefficient + other.coefficient;
+        let n = (4.0*self.coefficient*other.coefficient/(PI.powf(2.0))).powf(0.75);
+        let k = n*(-self.coefficient*other.coefficient/coefficient*diff).exp();
 
-        let center = ((a.coefficient*a.center + b.coefficient*b.center))/coefficient;
+        let center = ((self.coefficient*self.center + other.coefficient*other.center))/coefficient;
 
         (Gaussian {center, coefficient}, diff, k)
     }
 
-    pub fn overlap_integral(a: &Gaussian, b: &Gaussian) -> f32 {
+    pub fn overlap_integral(&self, other: &Gaussian) -> f32 {
 
         //Calculates the overlap integral between two gaussian functions
 
-        let (p, _diff_ab, k) = Gaussian::gaussian_product(a, b);
+        let (p, _diff_ab, k) = Gaussian::gaussian_product(self, other);
 
         (PI/p.coefficient).powf(1.5)*k
     
@@ -43,22 +43,22 @@ impl Gaussian {
 
     }
     
-    pub fn kinetic_energy_integral(a: &Gaussian, b: &Gaussian) -> f32 {
+    pub fn kinetic_energy_integral(&self, other: &Gaussian) -> f32 {
 
         //Calculates the kinetic energy integrals for un-normalised primitives
 
-        let (p, diff_ab, k) = Gaussian::gaussian_product(a, b);
-        let reduced_exponent = a.coefficient*b.coefficient/p.coefficient;
+        let (p, diff_ab, k) = Gaussian::gaussian_product(self, other);
+        let reduced_exponent = self.coefficient*other.coefficient/p.coefficient;
 
         reduced_exponent*(3.0-2.0*reduced_exponent*diff_ab)*(PI/p.coefficient).powf(1.5)*k
 
     }
 
-    pub fn nuclear_attraction_integral(a: &Gaussian, b: &Gaussian, atom: &Atom) -> f32 {
+    pub fn nuclear_attraction_integral(&self, other: &Gaussian, atom: &Atom) -> f32 {
 
         //Calculates the un-normalised nuclear attraction integrals
 
-        let (p, _diff_ab, k) = Gaussian::gaussian_product(a, b);
+        let (p, _diff_ab, k) = Gaussian::gaussian_product(self, other);
         let mut matrix_element = (-2.0*PI*atom.atomic_number as f32/p.coefficient)*k;
 
         if let Some(i) = Gaussian::f0(p.coefficient*(p.center-atom.position).norm_squared()) {
@@ -67,7 +67,7 @@ impl Gaussian {
         matrix_element
     }
     
-    pub fn two_electron_integral(a: &Gaussian, b: &Gaussian, c: &Gaussian, d: &Gaussian) -> f32 {
+    pub fn two_electron_integral(&self, a: &Gaussian, b: &Gaussian, c: &Gaussian) -> f32 {
 
         /*
         Calculate two electron integrals
@@ -75,8 +75,8 @@ impl Gaussian {
         r_p is the distance between a and b, r_q is the distance between c and d
         */
 
-        let (p, _diff_ab, k_ab) = Gaussian::gaussian_product(a, b);
-        let (q, _diff_cd, k_cd) = Gaussian::gaussian_product(c, d);
+        let (p, _diff_ab, k_ab) = self.gaussian_product(a);
+        let (q, _diff_cd, k_cd) = b.gaussian_product(c);
 
         let mut matrix_element = k_ab*k_cd*2.0*PI.powf(2.5)/(p.coefficient*q.coefficient*(p.coefficient+q.coefficient).sqrt());
 

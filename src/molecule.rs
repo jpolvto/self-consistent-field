@@ -1,19 +1,26 @@
 use nalgebra::{Vector3, DMatrix};
 use ndarray::Array4;
 use serde::{Serialize, Deserialize};
-
 use crate::gaussian::Gaussian;
 use crate::orbital::Orbital;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Molecule {
-    pub atoms: Vec<Atom>
+    pub atoms: Vec<Atom>,
+
+    #[serde(skip_serializing)]
+    #[serde(default)]
+    pub orbitals: Vec<Orbital>,
+
+    #[serde(skip_serializing)]
+    #[serde(default)]
+    pub sto_ng: usize
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Atom {
     // every atom must have an atomic number to identify the atom
-    pub atomic_number: i32,
+    pub atomic_number: usize,
 
     //the position is specified as a 3D vector
     pub position: Vector3<f32>,
@@ -25,13 +32,13 @@ impl Molecule {
 
         for atom_a in 0..self.atoms.len() {
             for atom_b in (atom_a + 1)..self.atoms.len() {
-                energy += (self.atoms[atom_a].atomic_number) as f32 / (self.atoms[atom_a].position - self.atoms[atom_b].position).norm();
+                energy += (self.atoms[atom_a].atomic_number as f32) / (self.atoms[atom_a].position - self.atoms[atom_b].position).norm();
             }
         }
         energy
     }
 
-    pub fn create_orbitals(&self) -> Vec<Orbital>{
+    pub fn create_orbitals(&mut self, sto_ng: usize) {
 
         let mut orbitals: Vec<Orbital> = Default::default();
         
@@ -39,16 +46,20 @@ impl Molecule {
             let center = atom.position;
 
             orbitals.push(Orbital {
-                n: 3,
                 exponents: Vec::from([0.444635, 0.535328, 0.154329]),
                 gaussians: Vec::from([Gaussian { center, coefficient: 0.444635 }, Gaussian { center, coefficient: 0.535328 }, Gaussian { center, coefficient: 0.154329 }])
             })
         }
-        orbitals
+
+        self.orbitals = orbitals;
+        self.sto_ng = 3;
     }
 
-    pub fn kinetic_matrix(orbitals: &Vec<Orbital>, sto_ng: usize) -> DMatrix<f32> {
+    pub fn kinetic_matrix(&self) -> DMatrix<f32> {
+        let orbitals = &self.orbitals;
         let size = orbitals.len();
+        let sto_ng = self.sto_ng;
+
         let mut kinetic = DMatrix::<f32>::zeros(size, size);
 
         for i in 0..size {
@@ -56,15 +67,17 @@ impl Molecule {
                 let a  = orbitals.get(i).unwrap();
                 let b = orbitals.get(j).unwrap();
 
-                [kinetic[(i, j)], kinetic[(j, i)]] = [Orbital::two_center_contraction(a, b, sto_ng, Gaussian::kinetic_energy_integral); 2];
+                [kinetic[(i, j)], kinetic[(j, i)]] = [a.two_center_contraction(b, sto_ng, Gaussian::kinetic_energy_integral); 2];
                 
             }
         }
         kinetic
     }
 
-    pub fn overlap_matrix(orbitals: &Vec<Orbital>, sto_ng: usize) -> DMatrix<f32> {
+    pub fn overlap_matrix(&self) -> DMatrix<f32> {
+        let orbitals = &self.orbitals;
         let size = orbitals.len();
+        let sto_ng = self.sto_ng;
         let mut overlap: DMatrix<f32> = DMatrix::identity(size, size);
 
         for i in 0..size {
@@ -72,14 +85,16 @@ impl Molecule {
                 let a  = orbitals.get(i).unwrap();
                 let b = orbitals.get(j).unwrap();
 
-                [overlap[(i, j)], overlap[(j, i)]] = [Orbital::two_center_contraction(a, b, sto_ng, Gaussian::overlap_integral); 2];
+                [overlap[(i, j)], overlap[(j, i)]] = [a.two_center_contraction(b, sto_ng, Gaussian::overlap_integral); 2];
             }
         }
         overlap
     }
 
-    pub fn nuclear_attraction_matrix(orbitals: &Vec<Orbital>, sto_ng: usize, atoms: &Vec<Atom>) -> DMatrix<f32> {
+    pub fn nuclear_attraction_matrix(&self) -> DMatrix<f32> {
+        let orbitals = &self.orbitals;
         let size = orbitals.len();
+        let sto_ng = self.sto_ng;
         let mut nuclear_attraction = DMatrix::<f32>::zeros(size, size);
 
         for i in 0..size {
@@ -87,8 +102,8 @@ impl Molecule {
                 let a  = orbitals.get(i).unwrap();
                 let b = orbitals.get(j).unwrap();
 
-                for atom in atoms {
-                    let element = Orbital::two_center_contraction_with_atom(a, b, sto_ng, atom,Gaussian::nuclear_attraction_integral);
+                for atom in &self.atoms {
+                    let element = a.two_center_contraction_with_atom(b, sto_ng, atom, Gaussian::nuclear_attraction_integral);
                     nuclear_attraction[(i,j)] += element;
                     if i != j {
                         nuclear_attraction[(j,i)] += element;
@@ -99,8 +114,10 @@ impl Molecule {
         nuclear_attraction    
     }
 
-    pub fn two_electron_matrix(orbitals: &Vec<Orbital>, sto_ng: usize ) -> Array4<f32> {
+    pub fn two_electron_matrix(&self) -> Array4<f32> {
+        let orbitals = &self.orbitals;
         let size = orbitals.len();
+        let sto_ng = self.sto_ng;
         let mut two_electron = Array4::<f32>::zeros((size, size, size, size));
 
         for i in 0..size {
@@ -113,7 +130,7 @@ impl Molecule {
                         let c  = orbitals.get(k).unwrap();
                         let d = orbitals.get(l).unwrap();
                     
-                        [two_electron[[i, j, k, l]], two_electron[[i, k, l, j]]] = [Orbital::four_center_contraction(a, b, c, d, sto_ng, Gaussian::two_electron_integral); 2]
+                        [two_electron[[i, j, k, l]], two_electron[[i, k, l, j]]] = [a.four_center_contraction(b, c, d, sto_ng, Gaussian::two_electron_integral); 2]
                     }
                 }
             }
@@ -121,12 +138,17 @@ impl Molecule {
         two_electron
     }
 
-    pub fn hartree_fock(size: usize, overlap: DMatrix<f32>, kinetic: DMatrix<f32>, nuclear_attraction_matrix: DMatrix<f32>, two_electron: Array4<f32>, nuclear_attraction_energy: f32) -> (f32, f32, i32) {
+    pub fn hartree_fock(&self) {
 
-        let mut old_energy:f32 = Default::default();
+        let two_electron = self.two_electron_matrix();
+        let kinetic = self.kinetic_matrix();
+        let overlap = self.overlap_matrix();
+        let nuclear_attraction_matrix = self.nuclear_attraction_matrix();
+        let nuclear_attraction_energy = self.nuclear_attraction_energy();
+        let size = self.orbitals.len();
+
+        let mut total_energy:f32 = Default::default();
         let mut electronic_energy: f32 = Default::default();
-        let scf_max = 100;
-        let mut iterations = Default::default();
         let mut p = DMatrix::<f32>::zeros(size, size);
         let mut p_previous = DMatrix::<f32>::zeros(size, size);
         let mut p_list: Vec<DMatrix<f32>> = Default::default();
@@ -141,7 +163,7 @@ impl Molecule {
          the term two_electron[(i, k, l, j)] is the exchange coefficient
         */
 
-        for scf_iter in 0..scf_max {
+        for scf_iter in 0..100 {
 
             let mut g = DMatrix::<f32>::zeros(size, size);
             
@@ -154,8 +176,6 @@ impl Molecule {
                     }
                 }
             }
-
-            println!("g: {}", g);
 
             let f = &h_core + g;
 
@@ -176,8 +196,7 @@ impl Molecule {
                 }
             }
 
-            iterations += 1;
         }
-        (old_energy, electronic_energy, iterations)
+        println!("Self consistent field finished with total energy: {} ", total_energy);
     }
 }
