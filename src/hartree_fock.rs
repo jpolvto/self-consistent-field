@@ -1,10 +1,7 @@
 use std::{env, fs};
-
 use nalgebra::DMatrix;
 
 use crate::molecule::Molecule;
-
-
 
 pub fn hartree_fock() {
 
