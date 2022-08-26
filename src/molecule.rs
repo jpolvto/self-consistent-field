@@ -38,7 +38,7 @@ impl Molecule {
         energy
     }
 
-    pub fn create_orbitals(&mut self, sto_ng: usize) {
+    pub fn create_orbitals(&mut self) {
 
         let mut orbitals: Vec<Orbital> = Default::default();
         
