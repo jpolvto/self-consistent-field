@@ -37,6 +37,8 @@ impl Gaussian {
 
         let (p, _diff_ab, k) = Gaussian::gaussian_product(self, other);
 
+        println!("p coefficient: {}, diff_ab: {}, k: {}, return_value: {}", p.coefficient, _diff_ab, k, (PI/p.coefficient).powf(1.5)*k);
+
         (PI/p.coefficient).powf(1.5)*k
     
         //normalization constant
