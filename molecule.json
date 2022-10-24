@@ -3,11 +3,11 @@
     [
         {
             "atomic_number": 1,
-            "position": [0.0,0.0,0.0]
+            "position": 0.0
         },
         {
             "atomic_number": 1,
-            "position": [0.0,0.0,0.7]
+            "position": 1.4
         }
     ]
 }

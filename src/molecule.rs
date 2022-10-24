@@ -1,5 +1,5 @@
 use itertools::iproduct;
-use nalgebra::{Vector3, DMatrix};
+use nalgebra::DMatrix;
 use ndarray::Array4;
 use serde::{Serialize, Deserialize};
 use crate::gaussian::Gaussian;
@@ -24,7 +24,7 @@ pub struct Atom {
     pub atomic_number: usize,
 
     //the position is specified as a 3D vector
-    pub position: Vector3<f32>,
+    pub position: f32,
 }
 
 impl Molecule {
@@ -33,7 +33,7 @@ impl Molecule {
 
         for atom_a in 0..self.atoms.len() {
             for atom_b in (atom_a + 1)..self.atoms.len() {
-                energy += (self.atoms[atom_a].atomic_number as f32) / (self.atoms[atom_a].position - self.atoms[atom_b].position).norm();
+                energy += (self.atoms[atom_a].atomic_number as f32) / (self.atoms[atom_a].position - self.atoms[atom_b].position).abs();
             }
         }
         energy

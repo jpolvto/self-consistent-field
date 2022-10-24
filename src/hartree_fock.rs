@@ -19,6 +19,8 @@ pub fn hartree_fock() {
     let nuclear_attraction_energy = molecule.nuclear_attraction_energy();
     let size = molecule.orbitals.len();
 
+    println!("two_electron: {two_electron}, kinetic: {kinetic}, overlap: {overlap}, nuclear_attraction_matrix: {nuclear_attraction_matrix}, nuclear_attraction_energy: {nuclear_attraction_energy}");
+
     let mut old_energy: f32 = Default::default();
     let mut total_energy: f32 = Default::default();
     let mut count: usize = Default::default();

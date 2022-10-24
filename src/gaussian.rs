@@ -1,7 +1,5 @@
-use std::f32::consts::PI;
-
+use std::{f32::consts::PI};
 use fastapprox::fast::erf;
-use nalgebra::Vector3;
 use serde::{Serialize, Deserialize};
 
 use crate::molecule::Atom;
@@ -9,7 +7,7 @@ use crate::molecule::Atom;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Gaussian {
     //nuclear coordinates
-    pub center: Vector3<f32>,
+    pub center: f32,
 
     //Gaussian orbital coefficient
     pub coefficient: f32,
@@ -17,53 +15,43 @@ pub struct Gaussian {
 
 impl Gaussian {
 
-    pub fn gaussian_product(&self, other: &Gaussian) -> (Gaussian, f32, f32) {
-
-        // function to calculate a gaussian product, and to have some convenient variables
-
-        let diff = (self.center-other.center).norm_squared();
-        let coefficient = self.coefficient + other.coefficient;
-        let n = (4.0*self.coefficient*other.coefficient/(PI.powf(2.0))).powf(0.75);
-        let k = n*(-self.coefficient*other.coefficient/coefficient*diff).exp();
-
-        let center = ((self.coefficient*self.center + other.coefficient*other.center))/coefficient;
-
-        (Gaussian {center, coefficient}, diff, k)
-    }
-
     pub fn overlap_integral(&self, other: &Gaussian) -> f32 {
 
         //Calculates the overlap integral between two gaussian functions
 
-        let (p, _diff_ab, k) = Gaussian::gaussian_product(self, other);
+        // normalization constant
+        let n = (2.0 *self.coefficient/PI).powf(0.75) * (2.0 *other.coefficient/PI).powf(0.75);
 
-        println!("p coefficient: {}, diff_ab: {}, k: {}, return_value: {}", p.coefficient, _diff_ab, k, (PI/p.coefficient).powf(1.5)*k);
-
-        (PI/p.coefficient).powf(1.5)*k
-    
-        //normalization constant
-
+        let mut matrix_element = n * (PI/(self.coefficient+other.coefficient)).powf(0.75); 
+        matrix_element *= -self.coefficient*other.coefficient/(self.coefficient+other.coefficient).exp() * (self.center-other.center).abs().powf(2.0);
+        matrix_element
     }
     
     pub fn kinetic_energy_integral(&self, other: &Gaussian) -> f32 {
 
         //Calculates the kinetic energy integrals for un-normalised primitives
 
-        let (p, diff_ab, k) = Gaussian::gaussian_product(self, other);
-        let reduced_exponent = self.coefficient*other.coefficient/p.coefficient;
+        // normalization constant
+        let n = (2.0 *self.coefficient/PI).powf(0.75) * (2.0 *other.coefficient/PI).powf(0.75);
 
-        reduced_exponent*(3.0-2.0*reduced_exponent*diff_ab)*(PI/p.coefficient).powf(1.5)*k
+        let mut matrix_element = n * self.coefficient*other.coefficient/(self.coefficient+other.coefficient);
+        matrix_element *= 3.0-2.0*self.coefficient*other.coefficient/((self.coefficient+other.coefficient)/(self.center-other.center).abs().powf(2.0));
+        matrix_element *= (PI/(self.coefficient+other.coefficient)).powf(0.75);
+        matrix_element *= -self.coefficient*other.coefficient/(self.coefficient+other.coefficient).exp() * (self.center-other.center).abs().powf(2.0);
+        matrix_element
 
     }
 
     pub fn nuclear_attraction_integral(&self, other: &Gaussian, atom: &Atom) -> f32 {
 
         //Calculates the un-normalised nuclear attraction integrals
+        let center_p = (self.coefficient*self.center + other.coefficient*other.center)/(self.coefficient + other.coefficient);
 
-        let (p, _diff_ab, k) = Gaussian::gaussian_product(self, other);
-        let mut matrix_element = (-2.0*PI*atom.atomic_number as f32/p.coefficient)*k;
+        let n = (2.0*self.coefficient/PI).powf(0.75) * (2.0*other.coefficient/PI).powf(0.75);
+        let mut matrix_element = n*-2.0*PI/(self.coefficient+other.coefficient)*(atom.atomic_number as f32);
+        matrix_element *= -self.coefficient*other.coefficient/(self.coefficient+other.coefficient).exp()*(self.center-other.center).abs().powf(2.0);
 
-        if let Some(i) = Gaussian::f0(p.coefficient*(p.center-atom.position).norm_squared()) {
+        if let Some(i) = Gaussian::f0((self.coefficient+other.coefficient)*(center_p-atom.position).abs().powf(2.0)) {
             matrix_element *= i;
         }
         matrix_element
@@ -73,16 +61,20 @@ impl Gaussian {
 
         /*
         Calculate two electron integrals
-        alpha, beta, delta, gamma are the coefficients of the gaussian orbitals
+        self.coefficient, other.coefficient, c.coefficient, b.coefficient are the coefficients of the gaussian orbitals
         r_p is the distance between a and b, r_q is the distance between c and d
         */
 
-        let (p, _diff_ab, k_ab) = self.gaussian_product(a);
-        let (q, _diff_cd, k_cd) = b.gaussian_product(c);
+        let center_p = (self.coefficient*self.center + a.coefficient*a.center)/(self.coefficient + a.coefficient);
+        let center_q = (b.coefficient*b.center + c.coefficient*c.center)/(b.coefficient + c.coefficient);
 
-        let mut matrix_element = k_ab*k_cd*2.0*PI.powf(2.5)/(p.coefficient*q.coefficient*(p.coefficient+q.coefficient).sqrt());
+        let n = (2.0*self.coefficient/PI).powf(0.75) * (2.0*a.coefficient/PI).powf(0.75)*(2.0*b.coefficient/PI).powf(0.75) * (2.0*c.coefficient/PI).powf(0.75);
 
-        if let Some(i) = Gaussian::f0(p.coefficient*q.coefficient/(p.coefficient+q.coefficient)*(p.center-q.center).norm_squared()) {
+        let mut matrix_element = n*2.0*PI.powf(2.5);
+        matrix_element /= (self.coefficient+a.coefficient)*(b.coefficient+c.coefficient)*(self.coefficient+a.coefficient+b.coefficient+c.coefficient).sqrt();
+        matrix_element *= -self.coefficient*a.coefficient/(self.coefficient+a.coefficient).exp()*(self.center-a.center).abs().powf(2.0) - b.coefficient*c.coefficient/(b.coefficient+c.coefficient)*(b.center-c.center).powf(2.0);
+
+        if let Some(i) = Gaussian::f0((self.coefficient+a.coefficient)*(b.coefficient+c.coefficient)/(self.coefficient+a.coefficient+b.coefficient+c.coefficient)*(center_p-center_q).abs().powf(2.0)) {
             matrix_element *= i;
         }
         matrix_element
@@ -97,5 +89,5 @@ impl Gaussian {
         } else {
             return Some(0.5*(PI/t).sqrt()*erf(t.sqrt()))
         }
-    }    
+    }
 }
